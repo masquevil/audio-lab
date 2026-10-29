@@ -1,0 +1,22 @@
+:root {
+  --color-text: #eef3fc;
+  --color-text-muted: #aebcd2;
+  --color-bg: #101827;
+  --color-surface: #18243a;
+  --color-border: #33445e;
+  --color-accent: #83dacc;
+  --color-on-accent: #101827;
+  --color-focus: #fff;
+
+  font-family: system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.6;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}

@@ -1,0 +1,36 @@
+# Logs
+.ai/
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+.DS_Store
+dist
+dist-ssr
+coverage
+*.local
+
+# ESLint 缓存（create-vue 模板）
+.eslintcache
+
+# TypeScript 增量构建信息（vue-tsc --build 产物）
+*.tsbuildinfo
+
+/cypress/videos/
+/cypress/screenshots/
+
+# Editor directories and files
+# .vscode/*
+# !.vscode/extensions.json
+.idea
+.lingma
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

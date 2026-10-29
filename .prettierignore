@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+dist
+node_modules
+.ai
+features/pools
+src/router/typed-router.d.ts
