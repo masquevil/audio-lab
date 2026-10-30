@@ -6,17 +6,35 @@
 
 开发按本次改动补读 CONTRIBUTING 的 Vue/TypeScript、样式或文档章节，review 只补读缺失、变更或新领域内容。规范未来拆分为 CONTRIBUTING/ 多文件时仍按主题加载，保留根文件为开发指南入口；不把 AI 阅读策略写入面向开发人员的规范。
 
-生成代码前遵循 [代码规范](CONTRIBUTING.md#代码规范基线)。SCSS、CSS 变量、import 分组及文档紧凑表格以此为唯一约定来源。
+开发默认读取 [开发指南](CONTRIBUTING.md)、需求及相关代码，不加载 code-review checklist；遇到具体技术疑问可按需查阅单个条目，不扩展为全文必读。进入技术审查阶段再加载 [评审清单](.cline/skills/code-review/checklist.md)，检查最终代码；两处分别维护，不复制规则。
 
 按需求流转中的确认点推进：关键方案先评审、明确确认后开发，普通细节自主处理；宣布方案不等于 PM 确认。
 
 - 开发、修复、评审需求时读取 [.cline/skills/feature-flow/SKILL.md](.cline/skills/feature-flow/SKILL.md)。
-- 开发过程中读取 [.cline/skills/dev-cs-vue/SKILL.md](.cline/skills/dev-cs-vue/SKILL.md)；开发完成、交付 PM 验收前统一读取 [.cline/skills/code-review/SKILL.md](.cline/skills/code-review/SKILL.md)。
+- 开发按 [.cline/skills/dev-cs-vue/SKILL.md](.cline/skills/dev-cs-vue/SKILL.md) 执行；交付前进入 code-review 阶段，读取审查流程与详细清单。code-review 只负责最终代码的规范、设计和技术审查，不以了解产品功能为前提。研发验证、QA 和 PM 验收另按需求流程执行；不把场景测试、故障注入或功能验收纳入 reviewer 职责。
 - 涉及声音或 Web Audio 生命周期时额外读取 [.cline/skills/web-audio/SKILL.md](.cline/skills/web-audio/SKILL.md)。
 
 这些是项目内文件，若客户端没有自动发现 skills，直接读取对应文件；不要声称已调用不存在的工具。保持 skills 小而专一，只将重复出现的项目经验提炼进去。
 
 ## 文件边界
+
+| 文件 | 应维护的内容 | 不应维护的内容 |
+| --- | --- | --- |
+| AGENTS.md | AI 阅读入口、执行顺序、文件职责与修改边界 | 面向开发者的代码规范、具体实现案例 |
+| CONTRIBUTING.md | 开发环境、目录边界、通用技术原则；少量精简的非业务正向示例 | 语法教程、逐项检查表、对话记录、返修辩解、业务实现细节 |
+| .cline/skills/*/SKILL.md | 专项任务的执行流程、触发条件、检查入口 | 复制整套开发规范或详细检查项 |
+| .cline/skills/code-review/checklist.md | reviewer 使用的详细技术核查项、正反例及不通过信号；开发仅在具体疑问时查条目 | 开发阶段必读材料、项目验收历史、重复抄写原则 |
+| features/pools、features/work、features/current-status.md | 原始需求、单份实施与验证记录、活动项索引 | 通用代码规范 |
+| tests/README.md | 单元测试组织、已确定的工具与执行方式；框架未定时说明现状 | 临时验证脚本、编译契约文件、未决定的框架配置、虚构的验证结果 |
+
+### 接收反馈后的修改规则
+
+- 先检查当前文件及用户修改，区分具体缺陷、实现偏好、通用原则或流程问题，再确定修改落点；不能每条反对意见都自动升级为全局规范。
+- 具体缺陷修代码，结论写需求记录；可推广原则进入 CONTRIBUTING；具体核查方法和例子进入 checklist；AI 执行约束进入 AGENTS 或对应 skill。
+- 将反馈推广检查到相关调用链及同类实现，不只修改点名的一行；不因此扩大功能、替换目录架构或引入无必要抽象。
+- 已确认的文件职责和技术边界保持稳定。搬移内容时同步删除旧副本、修正引用，避免重复制定规则；重要边界变更按需求流程先确认。
+- 规范示例使用非业务场景：CONTRIBUTING 用少量正向示例说明原则，checklist 用具体对照支持判断。不要将单次错误、个人辩解或整段对话改写成规范。
+- 文档修改检查链接、章节引用和规则冲突；仅文档变更执行相关检查，不用无关构建冒充文档验证。
 
 原始需求在 features/pools；实施记录在 features/work；当前状态只保留活动项。长期架构决策有实际需要时再建 docs，代码局部说明就近写。临时计划、调试日志、截图放 `.ai/`（已忽略），有验收价值的结论摘要写回需求记录。不要将整段对话或复制的代码当成长期文档。
 

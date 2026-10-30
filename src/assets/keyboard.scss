@@ -1,0 +1,15 @@
+// 琴键视觉 token：仅由真实键盘和首页预览使用，不属于全局主题。
+.keyboard-theme {
+  // 白键表面与边界
+  --color-key-white: #f5f7fa;
+  --color-key-bottom: #d9dfe8;
+  --color-key-edge: #929baa;
+  --color-key-shadow: #b6becb;
+
+  // 黑键表面
+  --color-key-black-top: #343e50;
+  --color-key-black: #151b25;
+
+  // 琴键文字
+  --color-key-label: #697386;
+}

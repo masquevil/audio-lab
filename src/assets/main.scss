@@ -1,22 +1,29 @@
+@use './reset';
+
 :root {
+  // 页面表面与边界
+  --color-bg: #0c1016;
+  --color-surface: #121820;
+  --color-border: #252f3d;
+  --color-shadow: #0008;
+
+  // 内容层级
   --color-text: #eef3fc;
   --color-text-muted: #aebcd2;
-  --color-bg: #101827;
-  --color-surface: #18243a;
-  --color-border: #33445e;
-  --color-accent: #83dacc;
+
+  // 交互与强调
+  --color-accent: #45dba0;
+  --color-accent-soft: #153329;
   --color-on-accent: #101827;
   --color-focus: #fff;
+}
 
-  font-family: system-ui, sans-serif;
-  color: var(--color-text);
+// 应用基础外观与排版
+:root {
   background: var(--color-bg);
+
+  font-size: 14px;
   line-height: 1.6;
+  color: var(--color-text);
   color-scheme: dark;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
 }
