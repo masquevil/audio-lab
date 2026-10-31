@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Audio API · 音色博物馆</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #16202e 0%, #0a0d12 60%);
+    color: #e8ecf1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    gap: 16px;
+  }
+  header { text-align: center; }
+  h1 { font-size: 1.3rem; font-weight: 650; letter-spacing: .02em; }
+  h1 span { color: #4ade80; }
+  header p { font-size: .76rem; color: #64748b; margin-top: 5px; }
+
+  canvas {
+    width: 100%;
+    max-width: 780px;
+    height: 170px;
+    background: #05070a;
+    border: 1px solid #1b2432;
+    border-radius: 14px;
+    display: block;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+
+  .tabs {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    flex: 1 1 auto;
+    min-width: 92px;
+    padding: 10px 10px;
+    font: inherit;
+    font-size: .8rem;
+    border-radius: 10px;
+    border: 1px solid #1b2432;
+    background: #11151c;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { background: #1a212b; color: #cbd5e1; }
+  .tab.active {
+    background: linear-gradient(135deg, #4ade80, #22d3ee);
+    color: #06131a;
+    border-color: transparent;
+    font-weight: 650;
+    box-shadow: 0 4px 20px rgba(74,222,128,.25);
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 780px;
+    background: rgba(17,21,28,.85);
+    border: 1px solid #1b2432;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    backdrop-filter: blur(8px);
+    min-height: 210px;
+  }
+
+  .desc {
+    font-size: .76rem;
+    color: #64748b;
+    line-height: 1.6;
+    padding-top: 2px;
+    border-top: 1px dashed #1b2432;
+  }
+  .desc b { color: #94a3b8; font-weight: 600; }
+
+  .keyboard {
+    position: relative;
+    height: 150px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0d1117;
+    border: 1px solid #232c3b;
+    user-select: none;
+    touch-action: none;
+  }
+  .wkey {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: linear-gradient(to bottom, #f4f6f9 0%, #d5dae2 88%, #c2c8d2 100%);
+    border-right: 1px solid #9aa3af;
+    border-radius: 0 0 5px 5px;
+    cursor: pointer;
+    transition: background .06s;
+  }
+  .wkey:last-child { border-right: none; }
+  .wkey:active, .wkey.active {
+    background: linear-gradient(to bottom, #d1fae5 0%, #4ade80 100%);
+    box-shadow: inset 0 -4px 12px rgba(0,0,0,.15);
+  }
+  .bkey {
+    position: absolute;
+    top: 0;
+    height: 60%;
+    background: linear-gradient(to bottom, #333c4d 0%, #141922 100%);
+    border-radius: 0 0 4px 4px;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 3px 6px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+    transition: background .06s;
+  }
+  .bkey:active, .bkey.active {
+    background: linear-gradient(to bottom, #22c55e 0%, #15803d 100%);
+    box-shadow: 0 1px 3px rgba(0,0,0,.5);
+  }
+
+  .pads {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .pad {
+    height: 86px;
+    font: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    background: linear-gradient(145deg, #1a222e, #12161e);
+    border: 1px solid #2a3444;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .08s;
+    touch-action: none;
+  }
+  .pad:active, .pad.active {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    color: #07120b;
+    border-color: #4ade80;
+    transform: scale(.97);
+  }
+
+  .vowel-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .vowel-btn {
+    flex: 1 1 80px;
+    padding: 16px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    border-radius: 12px;
+    background: #161c26;
+    border: 1px solid #2a3444;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all .1s;
+    font: inherit;
+    touch-action: none;
+  }
+  .vowel-btn b { font-size: 1.35rem; font-weight: 600; }
+  .vowel-btn small { font-size: .68rem; color: #64748b; letter-spacing: .05em; }
+  .vowel-btn:active, .vowel-btn.active {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    color: #07120b;
+    border-color: #4ade80;
+  }
+  .vowel-btn.active small { color: #0a2a14; }
+
+  .nature-row { display: flex; gap: 12px; }
+  .nature-btn {
+    flex: 1;
+    padding: 30px 12px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    background: linear-gradient(145deg, #1a222e, #12161e);
+    border: 1px solid #2a3444;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .nature-btn.active {
+    background: linear-gradient(145deg, #22d3ee, #0ea5e9);
+    color: #04131a;
+    border-color: #22d3ee;
+    box-shadow: 0 4px 24px rgba(34,211,238,.25);
+  }
+
+  .master-bar {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 4px 0;
+  }
+  .master-bar span { font-size: .85rem; }
+  .master-bar input[type=range] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #1f2937;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .master-bar input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: #4ade80;
+    border: 2px solid #0a0d12;
+    box-shadow: 0 0 10px rgba(74,222,128,.6);
+    cursor: pointer;
+  }
+  .master-bar input[type=range]::-moz-range-thumb {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    background: #4ade80;
+    border: 2px solid #0a0d12;
+    cursor: pointer;
+  }
+
+  .hint-global {
+    width: 100%;
+    max-width: 780px;
+    font-size: .72rem;
+    color: #4b5563;
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Web Audio <span>音色博物馆</span></h1>
+  <p>用代码合成乐器 · 人声 · 自然音</p>
+</header>
+
+<canvas id="viz"></canvas>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-inst="piano">🎹 钢琴</button>
+  <button class="tab" data-inst="bass">🎸 贝斯</button>
+  <button class="tab" data-inst="flute">🪈 笛子</button>
+  <button class="tab" data-inst="drums">🥁 鼓组</button>
+  <button class="tab" data-inst="voice">🗣️ 人声</button>
+  <button class="tab" data-inst="nature">🌧️ 环境音</button>
+</div>
+
+<div class="stage" id="stage"></div>
+
+<div class="master-bar">
+  <span>🔊</span>
+  <input type="range" id="masterVol" min="0" max="100" value="60">
+</div>
+
+<p class="hint-global">
+  点击按钮 / 琴键即可发声。所有声音均由 Web Audio API 实时合成，没有任何音频文件。
+</p>
+
+<script>
+/* ==========================================================
+   工具
+   ========================================================== */
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function noteToFreq(note) {
+  const m = note.match(/^([A-G]#?)(-?\d)$/);
+  if (!m) return 440;
+  const midi = NOTE_NAMES.indexOf(m[1]) + (+m[2] + 1) * 12;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+/* ==========================================================
+   音频上下文与主链路
+   ========================================================== */
+let ctx = null;
+let master, compressor, analyser, reverb, reverbWet;
+let noiseBuffer = null;
+
+function ensureAudio() {
+  if (!ctx) initAudio();
+  if (ctx.state === 'suspended') ctx.resume();
+}
+
+function initAudio() {
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  master = ctx.createGain();
+  master.gain.value = 0.6;
+
+  compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -14;
+  compressor.knee.value = 14;
+  compressor.ratio.value = 4;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.25;
+
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.82;
+
+  reverb = ctx.createConvolver();
+  reverb.buffer = makeReverbIR(2.4, 2.6);
+
+  reverbWet = ctx.createGain();
+  reverbWet.gain.value = 0.15;
+
+  master.connect(compressor);
+  master.connect(reverbWet);
+  reverbWet.connect(reverb);
+  reverb.connect(compressor);
+  compressor.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  noiseBuffer = makeNoiseBuffer(2);
+}
+
+function makeNoiseBuffer(seconds) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+function makeReverbIR(duration, decay) {
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate * duration);
+  const buf = ctx.createBuffer(2, len, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return buf;
+}
+
+/* ==========================================================
+   钢琴（加性合成）
+   ========================================================== */
+function playPiano(freq) {
+  const now = ctx.currentTime;
+  const dur = 2.4;
+
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, now);
+  out.gain.linearRampToValueAtTime(0.22, now + 0.006);
+  out.gain.setValueAtTime(0.22, now + dur * 0.88);
+  out.gain.linearRampToValueAtTime(0.0001, now + dur);
+  out.connect(master);
+
+  const parts = [
+    { mul: 1, type: 'triangle', amp: 1.00, decay: 2.1 },
+    { mul: 2, type: 'sine',     amp: 0.50, decay: 1.5 },
+    { mul: 3, type: 'sine',     amp: 0.27, decay: 1.1 },
+    { mul: 4, type: 'sine',     amp: 0.15, decay: 0.8 },
+    { mul: 5, type: 'sine',     amp: 0.09, decay: 0.6 },
+    { mul: 6, type: 'sine',     amp: 0.05, decay: 0.42 },
+  ];
+
+  parts.forEach(p => {
+    const osc = ctx.createOscillator();
+    osc.type = p.type;
+    osc.frequency.value = freq * p.mul;
+    osc.detune.value = (Math.random() - 0.5) * 6;
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(p.amp, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
+
+    osc.connect(g);
+    g.connect(out);
+    osc.start(now);
+    osc.stop(now + dur);
+  });
+}
+
+/* ==========================================================
+   贝斯（锯齿波 + 动态滤波）
+   ========================================================== */
+function playBass(freq) {
+  const now = ctx.currentTime;
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.value = freq;
+
+  const sub = ctx.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.value = freq;
+  const subGain = ctx.createGain();
+  subGain.gain.value = 0.5;
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.Q.value = 5;
+  filter.frequency.setValueAtTime(Math.min(freq * 12, 12000), now);
+  filter.frequency.exponentialRampToValueAtTime(freq * 1.6, now + 0.22);
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, now);
+  env.gain.linearRampToValueAtTime(0.38, now + 0.008);
+  env.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+
+  osc.connect(filter);
+  filter.connect(env);
+  sub.connect(subGain);
+  subGain.connect(env);
+  env.connect(master);
+
+  osc.start(now);
+  sub.start(now);
+  osc.stop(now + 0.9);
+  sub.stop(now + 0.9);
+}
+
+/* ==========================================================
+   笛子（正弦 + 颤音 + 气息噪声）
+   ========================================================== */
+function playFlute(freq) {
+  const now = ctx.currentTime;
+  const dur = 1.6;
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 5.3;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.setValueAtTime(0, now);
+  lfoGain.gain.linearRampToValueAtTime(freq * 0.007, now + 0.45);
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc.frequency);
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = freq * 2.5;
+  bp.Q.value = 2;
+  const ng = ctx.createGain();
+  ng.gain.value = 0.04;
+  noise.connect(bp);
+  bp.connect(ng);
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, now);
+  env.gain.linearRampToValueAtTime(0.26, now + 0.09);
+  env.gain.setValueAtTime(0.26, now + dur - 0.28);
+  env.gain.linearRampToValueAtTime(0.0001, now + dur);
+
+  osc.connect(env);
+  ng.connect(env);
+  env.connect(master);
+
+  osc.start(now);
+  lfo.start(now);
+  noise.start(now);
+  osc.stop(now + dur + 0.05);
+  lfo.stop(now + dur + 0.05);
+  noise.stop(now + dur + 0.05);
+}
+
+/* ==========================================================
+   鼓组
+   ========================================================== */
+function playKick() {
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(150, now);
+  osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.9, now);
+  env.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+  osc.connect(env);
+  env.connect(master);
+  osc.start(now);
+  osc.stop(now + 0.42);
+}
+
+function playSnare() {
+  const now = ctx.currentTime;
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 1200;
+  const nEnv = ctx.createGain();
+  nEnv.gain.setValueAtTime(0.42, now);
+  nEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+  noise.connect(hp);
+  hp.connect(nEnv);
+  nEnv.connect(master);
+
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(210, now);
+  osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+  const oEnv = ctx.createGain();
+  oEnv.gain.setValueAtTime(0.3, now);
+  oEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+  osc.connect(oEnv);
+  oEnv.connect(master);
+
+  noise.start(now);
+  noise.stop(now + 0.22);
+  osc.start(now);
+  osc.stop(now + 0.15);
+}
+
+function playHat() {
+  const now = ctx.currentTime;
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 7500;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.22, now);
+  env.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+  noise.connect(hp);
+  hp.connect(env);
+  env.connect(master);
+  noise.start(now);
+  noise.stop(now + 0.08);
+}
+
+function playClap() {
+  const now = ctx.currentTime;
+  for (let i = 0; i < 3; i++) {
+    const t = now + i * 0.011;
+    const noise = ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1600;
+    bp.Q.value = 1.1;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.linearRampToValueAtTime(0.3, t + 0.002);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+    noise.connect(bp);
+    bp.connect(env);
+    env.connect(master);
+    noise.start(t);
+    noise.stop(t + 0.09);
+  }
+}
+
+const DRUM_FNS = { kick: playKick, snare: playSnare, hat: playHat, clap: playClap };
+
+/* ==========================================================
+   人声（Formant 合成）
+   ========================================================== */
+const VOWELS = {
+  a: { f: [800, 1150, 2900, 3900], g: [1.0, 0.5, 0.25, 0.1], q: [10, 12, 15, 18] },
+  e: { f: [400, 1600, 2700, 3300], g: [1.0, 0.42, 0.28, 0.1], q: [9, 12, 15, 18] },
+  i: { f: [350, 1700, 2700, 3700], g: [1.0, 0.36, 0.22, 0.09], q: [8, 14, 16, 18] },
+  o: { f: [450, 800, 2830, 3500], g: [1.0, 0.46, 0.2, 0.09], q: [9, 11, 15, 18] },
+  u: { f: [325, 700, 2530, 3500], g: [1.0, 0.38, 0.16, 0.08], q: [8, 10, 15, 18] },
+};
+
+function playVoice(vowelKey) {
+  const now = ctx.currentTime;
+  const v = VOWELS[vowelKey] || VOWELS.a;
+  const dur = 1.4;
+  const base = 128;
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(base * 1.08, now);
+  osc.frequency.linearRampToValueAtTime(base, now + 0.18);
+
+  const drift = ctx.createOscillator();
+  drift.frequency.value = 0.8;
+  const driftGain = ctx.createGain();
+  driftGain.gain.value = 2.6;
+  drift.connect(driftGain);
+  driftGain.connect(osc.frequency);
+
+  const srcFilter = ctx.createBiquadFilter();
+  srcFilter.type = 'lowpass';
+  srcFilter.frequency.value = 5000;
+  osc.connect(srcFilter);
+
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, now);
+  out.gain.linearRampToValueAtTime(0.42, now + 0.05);
+  out.gain.setValueAtTime(0.42, now + dur - 0.35);
+  out.gain.linearRampToValueAtTime(0.0001, now + dur);
+  out.connect(master);
+
+  v.f.forEach((freq, i) => {
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = freq;
+    bp.Q.value = v.q[i];
+    const g = ctx.createGain();
+    g.gain.value = v.g[i] * 4.5;
+    srcFilter.connect(bp);
+    bp.connect(g);
+    g.connect(out);
+  });
+
+  const direct = ctx.createGain();
+  direct.gain.value = 0.05;
+  srcFilter.connect(direct);
+  direct.connect(out);
+
+  osc.start(now);
+  drift.start(now);
+  osc.stop(now + dur + 0.05);
+  drift.stop(now + dur + 0.05);
+}
+
+/* ==========================================================
+   环境音
+   ========================================================== */
+let natureNodes = null;
+
+function startNature(type) {
+  stopNature();
+  const now = ctx.currentTime;
+
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer;
+  src.loop = true;
+
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, now);
+  out.gain.linearRampToValueAtTime(0.3, now + 1.2);
+  out.connect(master);
+
+  let lfo1 = null, lfo2 = null;
+
+  if (type === 'rain') {
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 900;
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 7500;
+
+    lfo1 = ctx.createOscillator();
+    lfo1.frequency.value = 0.27;
+    const g1 = ctx.createGain();
+    g1.gain.value = 0.055;
+    lfo1.connect(g1);
+    g1.connect(out.gain);
+    lfo1.start(now);
+
+    src.connect(hp);
+    hp.connect(lp);
+    lp.connect(out);
+  } else {
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 550;
+    lp.Q.value = 2.5;
+
+    lfo1 = ctx.createOscillator();
+    lfo1.frequency.value = 0.11;
+    const g1 = ctx.createGain();
+    g1.gain.value = 380;
+    lfo1.connect(g1);
+    g1.connect(lp.frequency);
+    lfo1.start(now);
+
+    lfo2 = ctx.createOscillator();
+    lfo2.frequency.value = 0.17;
+    const g2 = ctx.createGain();
+    g2.gain.value = 0.07;
+    lfo2.connect(g2);
+    g2.connect(out.gain);
+    lfo2.start(now);
+
+    src.connect(lp);
+    lp.connect(out);
+  }
+
+  src.start(now);
+  natureNodes = { src, out, lfo1, lfo2 };
+}
+
+function stopNature() {
+  if (!natureNodes) return;
+  const now = ctx.currentTime;
+  const { src, out, lfo1, lfo2 } = natureNodes;
+
+  out.gain.cancelScheduledValues(now);
+  out.gain.setValueAtTime(out.gain.value, now);
+  out.gain.linearRampToValueAtTime(0.0001, now + 0.5);
+
+  setTimeout(() => {
+    try { src.stop(); } catch (e) {}
+    try { lfo1 && lfo1.stop(); } catch (e) {}
+    try { lfo2 && lfo2.stop(); } catch (e) {}
+  }, 600);
+
+  natureNodes = null;
+}
+
+/* ==========================================================
+   UI 渲染
+   ========================================================== */
+const stage = document.getElementById('stage');
+const tabs = document.getElementById('tabs');
+let currentInst = 'piano';
+
+const DESCRIPTIONS = {
+  piano: '<b>加性合成</b>：基频叠加 5 个谐波，每个谐波以不同速率指数衰减，模拟琴弦的自然共鸣与泛音结构。',
+  bass: '<b>减法合成</b>：锯齿波经过低通滤波器，滤波频率在起音瞬间从高处快速下降，制造出"弹拨"的力度感。',
+  flute: '<b>正弦波 + 颤音 LFO + 气息噪声</b>：5.3Hz 的颤音调制音高，带通滤波的白噪声模拟吹气声，柔和包络模拟管乐起音。',
+  drums: '<b>底鼓</b> = 正弦波从 150Hz 快速扫至 45Hz；<b>军鼓</b> = 高通噪声 + 三角波音调；<b>踩镲</b> = 极短的高通噪声脉冲；<b>拍手</b> = 3 个快速噪声脉冲。',
+  voice: '<b>Formant 合成</b>：锯齿波模拟声带振动，4 个并联带通滤波器分别对应 F1–F4 共振峰，不同的频率组合塑造出不同元音。',
+  nature: '<b>白噪声</b>经过动态滤波器，LFO 缓慢调制滤波频率与音量，模拟自然界中永不重复的随机性。',
+};
+
+function makeDesc(key) {
+  const p = document.createElement('div');
+  p.className = 'desc';
+  p.innerHTML = DESCRIPTIONS[key];
+  return p;
+}
+
+function bindKey(el, note, onPlay) {
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    ensureAudio();
+    el.classList.add('active');
+    onPlay(note);
+  });
+  el.addEventListener('pointerup', () => el.classList.remove('active'));
+  el.addEventListener('pointercancel', () => el.classList.remove('active'));
+  el.addEventListener('pointerleave', () => el.classList.remove('active'));
+}
+
+function renderKeyboard(onPlay, descKey) {
+  stage.innerHTML = '';
+  const kb = document.createElement('div');
+  kb.className = 'keyboard';
+
+  const whiteNotes = [];
+  for (let oct = 4; oct <= 5; oct++) {
+    ['C','D','E','F','G','A','B'].forEach(n => whiteNotes.push(n + oct));
+  }
+  const whiteW = 100 / whiteNotes.length;
+
+  whiteNotes.forEach((note, i) => {
+    const key = document.createElement('div');
+    key.className = 'wkey';
+    key.style.left = (i * whiteW) + '%';
+    key.style.width = whiteW + '%';
+    key.dataset.note = note;
+    bindKey(key, note, onPlay);
+    kb.appendChild(key);
+  });
+
+  const blackDefs = [
+    { after: 0, name: 'C#' },
+    { after: 1, name: 'D#' },
+    { after: 3, name: 'F#' },
+    { after: 4, name: 'G#' },
+    { after: 5, name: 'A#' },
+  ];
+  const blackW = whiteW * 0.62;
+
+  for (let oct = 0; oct < 2; oct++) {
+    blackDefs.forEach(({ after, name }) => {
+      const note = name + (4 + oct);
+      const i = after + oct * 7;
+      const key = document.createElement('div');
+      key.className = 'bkey';
+      key.style.left = ((i + 1) * whiteW - blackW / 2) + '%';
+      key.style.width = blackW + '%';
+      key.dataset.note = note;
+      bindKey(key, note, onPlay);
+      kb.appendChild(key);
+    });
+  }
+
+  stage.appendChild(kb);
+  stage.appendChild(makeDesc(descKey));
+}
+
+function renderDrums() {
+  stage.innerHTML = '';
+  const pads = document.createElement('div');
+  pads.className = 'pads';
+
+  const defs = [
+    { id: 'kick', label: '底鼓 Kick' },
+    { id: 'snare', label: '军鼓 Snare' },
+    { id: 'hat', label: '踩镲 Hi-Hat' },
+    { id: 'clap', label: '拍手 Clap' },
+  ];
+
+  defs.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'pad';
+    btn.textContent = d.label;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      ensureAudio();
+      btn.classList.add('active');
+      DRUM_FNS[d.id]();
+    });
+    btn.addEventListener('pointerup', () => btn.classList.remove('active'));
+    btn.addEventListener('pointerleave', () => btn.classList.remove('active'));
+    pads.appendChild(btn);
+  });
+
+  stage.appendChild(pads);
+  stage.appendChild(makeDesc('drums'));
+}
+
+function renderVoice() {
+  stage.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'vowel-row';
+
+  const vowels = [
+    { key: 'a', label: '啊', sub: '/a/' },
+    { key: 'e', label: '诶', sub: '/e/' },
+    { key: 'i', label: '衣', sub: '/i/' },
+    { key: 'o', label: '哦', sub: '/o/' },
+    { key: 'u', label: '乌', sub: '/u/' },
+  ];
+
+  vowels.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'vowel-btn';
+    btn.innerHTML = `<b>${v.label}</b><small>${v.sub}</small>`;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      ensureAudio();
+      btn.classList.add('active');
+      playVoice(v.key);
+    });
+    btn.addEventListener('pointerup', () => btn.classList.remove('active'));
+    btn.addEventListener('pointerleave', () => btn.classList.remove('active'));
+    row.appendChild(btn);
+  });
+
+  stage.appendChild(row);
+  stage.appendChild(makeDesc('voice'));
+}
+
+let natureCurrent = null;
+
+function renderNature() {
+  stage.innerHTML = '';
+  natureCurrent = null;
+
+  const row = document.createElement('div');
+  row.className = 'nature-row';
+
+  const defs = [
+    { type: 'rain', label: '🌧️ 雨声' },
+    { type: 'wind', label: '🌬️ 风声' },
+  ];
+
+  defs.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'nature-btn';
+    btn.textContent = d.label;
+    btn.addEventListener('click', () => {
+      ensureAudio();
+      if (natureCurrent === d.type) {
+        stopNature();
+        natureCurrent = null;
+        btn.classList.remove('active');
+      } else {
+        startNature(d.type);
+        natureCurrent = d.type;
+        row.querySelectorAll('.nature-btn').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+      }
+    });
+    row.appendChild(btn);
+  });
+
+  stage.appendChild(row);
+  stage.appendChild(makeDesc('nature'));
+}
+
+/* ==========================================================
+   音色切换
+   ========================================================== */
+function switchInstrument(inst) {
+  currentInst = inst;
+  stopNature();
+  natureCurrent = null;
+
+  tabs.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.inst === inst);
+  });
+
+  switch (inst) {
+    case 'piano':
+      renderKeyboard(note => playPiano(noteToFreq(note)), 'piano');
+      break;
+    case 'bass':
+      renderKeyboard(note => playBass(noteToFreq(note)), 'bass');
+      break;
+    case 'flute':
+      renderKeyboard(note => playFlute(noteToFreq(note)), 'flute');
+      break;
+    case 'drums':
+      renderDrums();
+      break;
+    case 'voice':
+      renderVoice();
+      break;
+    case 'nature':
+      renderNature();
+      break;
+  }
+}
+
+tabs.addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  ensureAudio();
+  switchInstrument(btn.dataset.inst);
+});
+
+/* ==========================================================
+   总音量
+   ========================================================== */
+document.getElementById('masterVol').addEventListener('input', e => {
+  ensureAudio();
+  master.gain.setTargetAtTime(+e.target.value / 100, ctx.currentTime, 0.02);
+});
+
+/* ==========================================================
+   可视化
+   ========================================================== */
+const canvas = document.getElementById('viz');
+const gfx = canvas.getContext('2d');
+let canvasW = 0, canvasH = 0, dpr = 1;
+let freqData = null;
+
+function resizeCanvas() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  canvasW = rect.width;
+  canvasH = rect.height;
+  canvas.width = Math.round(canvasW * dpr);
+  canvas.height = Math.round(canvasH * dpr);
+  gfx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function draw() {
+  requestAnimationFrame(draw);
+  gfx.clearRect(0, 0, canvasW, canvasH);
+
+  gfx.strokeStyle = 'rgba(255,255,255,0.03)';
+  gfx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = (canvasH / 4) * i;
+    gfx.beginPath();
+    gfx.moveTo(0, y);
+    gfx.lineTo(canvasW, y);
+    gfx.stroke();
+  }
+
+  if (!ctx) {
+    gfx.fillStyle = '#334155';
+    gfx.font = '13px system-ui, sans-serif';
+    gfx.textAlign = 'center';
+    gfx.textBaseline = 'middle';
+    gfx.fillText('点击任意按钮或琴键，启动音频引擎', canvasW / 2, canvasH / 2);
+    return;
+  }
+
+  const bufLen = analyser.frequencyBinCount;
+  if (!freqData || freqData.length !== bufLen) {
+    freqData = new Uint8Array(bufLen);
+  }
+  analyser.getByteFrequencyData(freqData);
+
+  const bars = 72;
+  const gap = 2;
+  const barW = (canvasW - gap * (bars - 1)) / bars;
+
+  const grad = gfx.createLinearGradient(0, canvasH, 0, 0);
+  grad.addColorStop(0, 'rgba(34,197,94,0.25)');
+  grad.addColorStop(0.5, '#4ade80');
+  grad.addColorStop(1, '#a7f3d0');
+
+  const usable = Math.floor(bufLen * 0.55);
+
+  for (let i = 0; i < bars; i++) {
+    const ratio = i / bars;
+    const idx = Math.floor(ratio * ratio * usable);
+    const v = (freqData[idx] || 0) / 255;
+    const h = Math.max(v * canvasH * 0.92, 1.5);
+
+    const x = i * (barW + gap);
+    gfx.fillStyle = grad;
+    gfx.fillRect(x, canvasH - h, barW, h);
+
+    gfx.fillStyle = 'rgba(255,255,255,0.45)';
+    gfx.fillRect(x, canvasH - h, barW, 1.5);
+  }
+}
+
+/* ==========================================================
+   启动
+   ========================================================== */
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+draw();
+switchInstrument('piano');
+</script>
+</body>
+</html>

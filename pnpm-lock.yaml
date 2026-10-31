@@ -166,6 +166,9 @@ importers:
 
   .:
     dependencies:
+      klatt-syn:
+        specifier: ^1.0.9
+        version: 1.0.9
       vue:
         specifier: ^3.5.41
         version: 3.5.42(typescript@6.0.3)
@@ -812,6 +815,9 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
+  dsp-collection@1.0.1:
+    resolution: {integrity: sha512-M3G4UbNhRg7PtUl4phFvbzN5rYbOah35y9KEHdtw4VkwRLbJMqZGblIRO5pj2BoGqT5sMfj7VC9bfRS41U0xBA==}
+
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
@@ -1030,6 +1036,9 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
+
+  klatt-syn@1.0.9:
+    resolution: {integrity: sha512-LniUNsDNOe2+j9EGScpJ4vScxQieNC4kv1sG+A6I/xeQzZe8xw+T9w0nTPs5zUKv++8rCEbrcHZEET+TxkAdOA==}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -2132,6 +2141,8 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
+  dsp-collection@1.0.1: {}
+
   eastasianwidth@0.2.0: {}
 
   emoji-regex@8.0.0: {}
@@ -2343,6 +2354,10 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  klatt-syn@1.0.9:
+    dependencies:
+      dsp-collection: 1.0.1
 
   levn@0.4.1:
     dependencies:

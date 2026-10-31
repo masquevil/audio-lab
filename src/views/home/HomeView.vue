@@ -37,7 +37,11 @@ import { RouterLink } from 'vue-router';
         </div>
         <span class="card-action">开始演奏 →</span>
       </RouterLink>
-      <section class="feature-card">
+      <RouterLink
+        class="feature-card linked-card"
+        to="/voice"
+        aria-label="人声基础模拟，开始实验"
+      >
         <div class="card-heading">
           <span
             class="feature-icon"
@@ -45,12 +49,13 @@ import { RouterLink } from 'vue-router';
           >
             ∿
           </span>
-          <span class="feature-badge planned-badge">规划中</span>
+          <span class="feature-badge">基础实验</span>
         </div>
-        <h2 class="card-title">更多声音实验</h2>
-        <p class="card-description">节奏、音色与声波可视化……未来方向仅作展示，暂未开放。</p>
-        <div class="coming-soon">更多灵感，正在酝酿。</div>
-      </section>
+        <h2 class="card-title">人声基础模拟</h2>
+        <p class="card-description">六个元音 · 四个声调 · 男女声合成预设</p>
+        <div class="vowel-preview">a · o · e · i · u · ü</div>
+        <span class="card-action">开始实验 →</span>
+      </RouterLink>
     </div>
     <p class="page-footnote">WEB AUDIO API <span>无需安装 · 无需麦克风权限 · 不自动播放</span></p>
   </main>
@@ -145,12 +150,6 @@ import { RouterLink } from 'vue-router';
     color: var(--color-accent);
   }
 
-  .planned-badge {
-    background: var(--color-bg);
-
-    color: var(--color-text-muted);
-  }
-
   .card-title {
     margin: 12px 0 8px;
 
@@ -171,7 +170,7 @@ import { RouterLink } from 'vue-router';
     text-decoration: none;
   }
 
-  .coming-soon {
+  .vowel-preview {
     display: flex;
     align-items: center;
 

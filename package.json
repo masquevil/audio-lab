@@ -17,6 +17,7 @@
     "check": "pnpm lint && pnpm format:check && pnpm build"
   },
   "dependencies": {
+    "klatt-syn": "^1.0.9",
     "vue": "^3.5.41",
     "vue-router": "^5.4.0"
   },

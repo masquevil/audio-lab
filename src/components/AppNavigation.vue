@@ -13,12 +13,20 @@ import { RouterLink } from 'vue-router';
     >
       ∿ AUDIO LAB <span class="brand-caption">/ 首页</span>
     </RouterLink>
-    <RouterLink
-      class="navigation-link"
-      to="/instruments"
-    >
-      乐器演奏
-    </RouterLink>
+    <div class="navigation-links">
+      <RouterLink
+        class="navigation-link"
+        to="/instruments"
+      >
+        乐器演奏
+      </RouterLink>
+      <RouterLink
+        class="navigation-link"
+        to="/voice"
+      >
+        人声模拟
+      </RouterLink>
+    </div>
   </nav>
 </template>
 
@@ -27,6 +35,7 @@ import { RouterLink } from 'vue-router';
 .app-navigation {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 20px;
   max-width: 1060px;
   margin: auto;
@@ -53,5 +62,11 @@ import { RouterLink } from 'vue-router';
     font-weight: 400;
     margin-left: 8px;
   }
+}
+
+.navigation-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 </style>
