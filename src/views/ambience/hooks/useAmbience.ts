@@ -3,13 +3,29 @@ import { onUnmounted, readonly, ref } from 'vue';
 import { defaultIntensities, maxRecordingSeconds } from '../constants/ambience';
 import { createAmbienceSession } from '../models/ambienceSession';
 import type { AmbienceSession } from '../models/ambienceSession';
-import { clearTextureCache } from '../models/ambienceTexture';
+import { clearTextureCache, textureWarmupTasks } from '../models/ambienceTexture';
 import type {
   AmbienceController,
   AmbienceLayerId,
   AmbienceRecording,
   RecordingStatus,
 } from '../types/ambience';
+
+/** 预生成纹理时假设的采样率；多数设备为 48kHz，不一致时首次播放会重新生成。 */
+const warmupSampleRate = 48_000;
+
+/** 空闲回调；不支持时退化为短延时，避免阻塞交互。 */
+function scheduleIdle(callback: () => void): number {
+  if (typeof window.requestIdleCallback === 'function') {
+    return window.requestIdleCallback(callback);
+  }
+  return window.setTimeout(callback, 200);
+}
+
+function cancelIdle(handle: number): void {
+  if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(handle);
+  else window.clearTimeout(handle);
+}
 
 function formatTimestamp(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -36,6 +52,35 @@ export function useAmbience(): AmbienceController {
   let disposed = false;
   let recordingTimer: ReturnType<typeof setInterval> | undefined;
   let recordingStartedAt = 0;
+  let idleHandle: number | undefined;
+
+  function stopWarmup(): void {
+    if (idleHandle === undefined) return;
+    cancelIdle(idleHandle);
+    idleHandle = undefined;
+  }
+
+  /**
+   * 用页面空闲时间分批预生成首次播放会用到的纹理，避免第一次点击时才渲染。
+   * 一旦建立会话（真实采样率已确定）就停止：此时要么已命中缓存，
+   * 要么需要按真实采样率重新生成，继续预生成没有意义。
+   */
+  function warmupTextures(): void {
+    const tasks = textureWarmupTasks(warmupSampleRate);
+    const run = (): void => {
+      idleHandle = undefined;
+      if (disposed || session) return;
+      const task = tasks.shift();
+      if (!task) return;
+      try {
+        task();
+      } catch {
+        return; // 预生成失败不影响正常播放，点击时会重新尝试
+      }
+      if (tasks.length) idleHandle = scheduleIdle(run);
+    };
+    idleHandle = scheduleIdle(run);
+  }
 
   /** 销毁会话时同步复位面板状态，避免 UI 仍显示播放或录音。 */
   function closeSession(immediate = false): void {
@@ -210,11 +255,14 @@ export function useAmbience(): AmbienceController {
 
   onUnmounted(() => {
     disposed = true;
+    stopWarmup();
     clearRecordingTimer();
     discardRecording();
     closeSession(true);
     clearTextureCache();
   });
+
+  if (supported) warmupTextures();
 
   return {
     intensities: readonly(intensities),

@@ -430,3 +430,18 @@ export function getThunderTexture(rate: number, preset: ThunderAudioPreset): Ste
 export function clearTextureCache(): void {
   textureCache.clear();
 }
+
+/**
+ * 首次播放会用到的纹理，按建议顺序返回生成函数。
+ * 调用方负责分批执行（空闲时间），避免一次占用主线程。
+ *
+ * 采样率必须与播放时的 `AudioContext.sampleRate` 一致才能命中缓存；
+ * 预生成用的采样率与实际不符时，首次播放会按真实采样率重新生成。
+ */
+export function textureWarmupTasks(rate: number): (() => void)[] {
+  return [
+    () => getRainTexture(rate, 'light'),
+    () => getRainTexture(rate, 'heavy'),
+    () => getEmberBedTexture(rate),
+  ];
+}
