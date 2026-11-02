@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import band_shares, decode, envelope_db, tonality  # noqa: E402
+from common import RATE, band_shares, decode, envelope_db, tonality  # noqa: E402
 
 EDGES = [(20, 60), (60, 120), (120, 250), (250, 500), (500, 1000), (1000, 2000), (2000, 4000), (4000, 16000)]
 
@@ -33,7 +33,7 @@ def features(path: Path) -> dict[str, float]:
     total = spectrum.sum() + 1e-20
     tonal = tonality(samples)
     return {
-        "duration": len(samples) / 48_000,
+        "duration": len(samples) / RATE,
         "crest_db": float(20 * np.log10((np.max(np.abs(samples)) + 1e-12) / (np.sqrt(np.mean(samples**2)) + 1e-12))),
         "env_cv": float(np.std(slow) / (np.mean(slow) + 1e-12)),
         "slow_mod": float(spectrum[(hz >= 0.15) & (hz < 3)].sum() / total),

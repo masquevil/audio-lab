@@ -1,7 +1,7 @@
 """Generate the light-rain envelope template from a reference recording.
 
-Rain is stationary, so there is no A/B split: splitSeconds is 0 and the whole
-template is the loop body plus a 1 s tail used to fold a seamless loop.
+Rain is stationary, so there is no A/B split: the whole template is the loop
+body plus a 1 s tail used to fold a seamless loop.
 
 Usage:
     python3 tools/sound/build-rain-envelope.py <light-rain-reference> --out <file.ts>
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from common import CENTERS, band_analysis, decode  # noqa: E402
+from common import CENTERS, RATE, band_analysis, decode  # noqa: E402
 
 # 轻雨的“清透感”主要来自 8kHz 以上：参考里 8k+ 只比总能量低 6.9dB，
 # 而 24 段模板最高只到 6.3kHz，重建后高频是空的。这里补三档。
@@ -42,7 +42,7 @@ def main() -> None:
     arguments = parser.parse_args()
 
     helpers = load_helpers()
-    samples = decode(arguments.reference)[: int(arguments.seconds * 48_000)]
+    samples = decode(arguments.reference)[: int(arguments.seconds * RATE)]
     envelope = helpers.trim(band_analysis(samples, centers=RAIN_CENTERS))
     payload = helpers.quantise(envelope)
     encoded = base64.b64encode(payload).decode()

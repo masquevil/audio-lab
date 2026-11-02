@@ -36,12 +36,9 @@ export const ambienceLayers: Record<AmbienceLayerId, AmbienceLayerConfig> = {
     detail: '木柴噼啪作响',
     intensityLabels: ['余烬', '火苗', '篝火', '旺火', '烈焰'],
     defaultValue: 0.4,
-    // 滑块两端各 20% 对篝火没有有效变化（更低太稀、更高太密）：
-    // 于是把 0.2–0.8 映射成原来 0–1 的效果，超出部分按端点处理。
-    intensityRange: [0.2, 0.8],
     // 篝火的音量随强度只做很小的变化（响爆电平 0.75→0.9），主要靠密度区分；
-    // 所以输出电平几乎不随强度变（下限 92%），低强度也要能听见，不能静音。
-    minLevelRatio: 0.92,
+    // 所以输出电平几乎不随强度变（下限 88%），低强度也要能听见，不能静音。
+    minLevelRatio: 0.88,
     maxGain: 2.2,
     gainCurve: 0.6,
   },

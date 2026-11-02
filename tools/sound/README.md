@@ -11,7 +11,7 @@ pip install -r tools/sound/requirements.txt
 # 另需系统安装 ffmpeg
 ```
 
-`judge.py` 需要额外的 `torch` / `transformers`，首次运行会下载 `MIT/ast-finetuned-audioset-10-10-0.4593`（约 350MB）；离线环境设 `HF_HUB_OFFLINE=1` 使用本地缓存。其余脚本只需要 `numpy` 和 ffmpeg。
+`requirements.txt` 已包含 `judge.py` 需要的 `torch` / `transformers`（体积较大）；它们只在 `judge.py` 内按需导入，其余脚本只需要 `numpy` 和 ffmpeg。首次判定会下载 `MIT/ast-finetuned-audioset-10-10-0.4593`（约 350MB）；离线环境设 `HF_HUB_OFFLINE=1` 使用本地缓存。
 
 ## 与产品代码的关系
 

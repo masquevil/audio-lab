@@ -80,6 +80,7 @@ export function createAmbienceSession(): AmbienceSession {
   let recordingDestination: MediaStreamAudioDestinationNode | undefined;
   let recordingChunks: Blob[] = [];
   let recordingStop: Promise<AmbienceRecording> | undefined;
+  let recordingStopReject: ((reason: unknown) => void) | undefined;
   let closing: Promise<void> | undefined;
 
   function releaseRecording(): void {
@@ -93,17 +94,22 @@ export function createAmbienceSession(): AmbienceSession {
   }
 
   function cancelRecording(): void {
-    if (!recorder) return;
-    const currentRecorder = recorder;
-    try {
-      currentRecorder.onstop = null;
-      currentRecorder.onerror = null;
-      if (currentRecorder.state !== 'inactive') currentRecorder.stop();
-    } catch {
-      // 关闭上下文前无需处理停止失败。
-    }
+    // 取消时主动结束等待中的停止请求，避免调用方永久挂起。
+    const rejectStop = recordingStopReject;
+    recordingStopReject = undefined;
     recordingStop = undefined;
-    releaseRecording();
+    if (recorder) {
+      const currentRecorder = recorder;
+      try {
+        currentRecorder.onstop = null;
+        currentRecorder.onerror = null;
+        if (currentRecorder.state !== 'inactive') currentRecorder.stop();
+      } catch {
+        // 关闭上下文前无需处理停止失败。
+      }
+      releaseRecording();
+    }
+    rejectStop?.(new Error('录音已取消。'));
   }
 
   function startRecording(): void {
@@ -147,7 +153,9 @@ export function createAmbienceSession(): AmbienceSession {
       return Promise.reject(new Error('当前没有进行中的录音。'));
     }
     recordingStop = new Promise<AmbienceRecording>((resolve, reject) => {
+      recordingStopReject = reject;
       currentRecorder.onstop = () => {
+        recordingStopReject = undefined;
         const mimeType = currentRecorder.mimeType || recordingChunks[0]?.type || 'audio/webm';
         const blob = new Blob(recordingChunks, { type: mimeType });
         recordingStop = undefined;
@@ -159,6 +167,7 @@ export function createAmbienceSession(): AmbienceSession {
         resolve({ blob, extension: getRecordingExtension(mimeType) });
       };
       currentRecorder.onerror = () => {
+        recordingStopReject = undefined;
         recordingStop = undefined;
         releaseRecording();
         reject(new Error('录音失败，请重试。'));
@@ -166,6 +175,7 @@ export function createAmbienceSession(): AmbienceSession {
       try {
         currentRecorder.stop();
       } catch (error) {
+        recordingStopReject = undefined;
         recordingStop = undefined;
         releaseRecording();
         reject(error);
@@ -193,7 +203,9 @@ export function createAmbienceSession(): AmbienceSession {
     }
   }
 
-  /** 重复关闭返回同一个释放任务，正常停止先淡出。 */
+  /**
+   * 重复关闭返回同一个释放任务；首次是淡出关闭时，后续的 `immediate` 不再生效。
+   */
   function close(immediate = false): Promise<void> {
     closing ??= releaseResources(immediate);
     return closing;

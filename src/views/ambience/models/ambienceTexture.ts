@@ -1,3 +1,9 @@
+/*
+ * 纹理入口：把参考包络与程序化噪声渲染成可循环的立体声音频数据。
+ *
+ * 本模块及其导入链会被 tools/sound/render-presets.mjs 以 Node 直接执行（不经构建），
+ * 因此这条链上的相对导入必须写全 `.ts` 扩展名。
+ */
 import {
   createRandom,
   highpassInPlace,
@@ -13,7 +19,6 @@ import { createThunderEnvelopeTexture, thunderAudioPresets } from './thunderEnve
 import type { ThunderAudioPreset } from './thunderEnvelope.ts';
 
 export type RainTextureVariant = 'light' | 'heavy';
-export type ThunderDistance = 'near' | 'mid' | 'far';
 
 function randomBetween(random: Random, min: number, max: number): number {
   return min + random() * (max - min);
@@ -166,7 +171,7 @@ function makeSeamlessLoop(
 }
 
 /** 程序化暴雨：低中频雨幕 + 稀疏雨滴撞击，立体声，可无缝循环。 */
-export function createHeavyRainTexture(rate: number, seed = 12): StereoTexture {
+function createHeavyRainTexture(rate: number, seed = 12): StereoTexture {
   const random = createRandom(seed);
   const loopSeconds = 20;
   const crossfade = 1;
@@ -310,7 +315,7 @@ function cachedTexture(key: string, create: () => StereoTexture): StereoTexture 
  * 整体比响爆低约 15dB，并带有慢速起伏；若用噪声层去补，会立刻听出“噪声感”。
  * 因此这里只铺微爆：够密（彼此重叠）才会像“持续燃烧”，而不是一串响指。
  */
-export function createEmberBedTexture(rate: number, seconds = 20, seed = 41): StereoTexture {
+function createEmberBedTexture(rate: number, seconds = 20, seed = 41): StereoTexture {
   const random = createRandom(seed);
   const crossfade = 1;
   const length = Math.round((seconds + crossfade) * rate);

@@ -1,7 +1,7 @@
 /**
  * 篝火的单次响爆音色。
  *
- * 每个函数返回“已经连好、还没启动”的脉冲列表，由调用方决定启动方式和回收策略：
+ * 构造函数返回“已经连好、还没启动”的响爆，由调用方决定启动方式和回收策略：
  * 播放层交给 `core.playBurst`（随声部销毁统一回收）。
  */
 
@@ -33,11 +33,15 @@ export const fireTimbreInfos: readonly FireTimbreInfo[] = [
   { kind: 'tick', probability: 0.08, boost: 1.7 },
 ];
 
+/** 响爆密度区间（次/秒）：滑块最弱与最强两端的取值。 */
+const crackleRateRange = { min: 0.2, max: 8 } as const;
+
 /**
- * 响爆密度（次/秒），与产品一致：弱火约 0.2、默认强度约 0.7、强火约 8。
+ * 响爆密度（次/秒）；三次方让弱火保持稀疏，接近最强时迅速变密。
  */
-export function fireCrackleRate(intensity: number): number {
-  return 0.2 + 7.8 * intensity ** 3;
+function fireCrackleRate(intensity: number): number {
+  const { min, max } = crackleRateRange;
+  return min + (max - min) * intensity ** 3;
 }
 
 /** 到下一次响爆的等待秒数：0.45–1.7 倍平均间隔，形成不规则的疏密。 */
@@ -122,7 +126,7 @@ function emitBurst(
 }
 
 /**
- * 按音色构造一次响爆（可能包含多个脉冲）。
+ * 按音色构造一次响爆（单个噪声脉冲）。
  * `intensity` 0–1 只影响音量倍率（0.75→0.9），密度由排程控制；
  * 音色本身不随强度变化，这样"最高和最低的音量差很小，主要差在频率"。
  */
@@ -133,11 +137,10 @@ export function buildFireTimbre(
   kind: FireTimbreKind,
   intensity: number,
   when: number,
-): FireBurst[] {
+): FireBurst {
   const scale = 0.75 + 0.15 * intensity;
   const boost = fireTimbreInfos.find((info) => info.kind === kind)?.boost ?? 1;
   const levelScale = scale * boost;
-  const bursts: FireBurst[] = [];
 
   const cutoff = kind === 'pop' ? 500 : kind === 'creak' ? 900 : kind === 'tick' ? 12000 : 5000;
   const highpass = kind === 'pop' ? 80 : kind === 'creak' ? 150 : kind === 'tick' ? 4000 : 600;
@@ -158,14 +161,11 @@ export function buildFireTimbre(
           ? randomBetween(0.08, 0.18)
           : randomBetween(0.2, 0.55)) * levelScale;
 
-  bursts.push(
-    emitBurst(context, noiseBuffer, destination, when, {
-      duration,
-      lowpass: cutoff,
-      highpass,
-      level,
-      attack: kind === 'tick' ? 0.0005 : 0.001,
-    }),
-  );
-  return bursts;
+  return emitBurst(context, noiseBuffer, destination, when, {
+    duration,
+    lowpass: cutoff,
+    highpass,
+    level,
+    attack: kind === 'tick' ? 0.0005 : 0.001,
+  });
 }

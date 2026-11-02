@@ -9,7 +9,6 @@ import {
   thunderTexturePresets,
   toAudioBuffer,
 } from './ambienceTexture';
-import type { ThunderDistance } from './ambienceTexture';
 import { buildFireTimbre, fireClusterOffsets, nextFireDelay, pickFireTimbre } from './fireTimbre';
 import type { ThunderAudioPreset } from './thunderEnvelope';
 
@@ -67,18 +66,6 @@ function clampIntensity(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/**
- * 把滑块的原始强度换算成声部实际使用的强度。
- * 没配置 `intensityRange` 时就是原值；配置了 [0.2, 0.8] 时，
- * 0.2 映射到 0、0.8 映射到 1，两端之外夹到端点。
- */
-export function mapIntensity(value: number, range?: readonly [number, number]): number {
-  const clamped = clampIntensity(value);
-  if (!range) return clamped;
-  const [min, max] = range;
-  return clampIntensity((clamped - min) / Math.max(1e-6, max - min));
-}
-
 function randomBetween(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -116,11 +103,11 @@ function createLayerCore(
   const core: LayerCore = {
     context,
     output,
-    intensity: mapIntensity(config.defaultValue, config.intensityRange),
+    intensity: clampIntensity(config.defaultValue),
     active: false,
     setIntensity(value) {
       if (disposed) return;
-      core.intensity = mapIntensity(value, config.intensityRange);
+      core.intensity = clampIntensity(value);
       core.updateSound?.();
       updateLevel();
     },
@@ -332,7 +319,12 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
     const intensity = core.intensity;
     const now = context.currentTime;
     if (intensity < HOWL_THRESHOLD) {
+      // 降回阈值以下时，已排入未来的阵风自动化必须一起清空：
+      // 否则它会在后面的时间点重新抬高啸叫门与风量，听感上“啸叫消失后又冒出来”。
+      howlGate.gain.cancelScheduledValues(now);
       howlGate.gain.setTargetAtTime(0, now, 0.18);
+      gustGain.gain.cancelScheduledValues(now);
+      gustGain.gain.setTargetAtTime(1, now, 0.3);
     }
     const activeVoices = intensity < 0.35 ? 1 : intensity < 0.7 ? 2 : 3;
     // 多层风各自起伏；保留最低电平，飓风时不会所有层同时归零。
@@ -485,11 +477,7 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
     }
   };
 
-  return {
-    setIntensity: core.setIntensity,
-    setActive: core.setActive,
-    dispose: core.dispose,
-  };
+  return core;
 }
 
 /** 雨声：轻/重双纹理交叉淡化，强度决定混合比例。 */
@@ -536,12 +524,11 @@ function createRainLayer(core: LayerCore): AmbienceLayer {
   core.startBufferSource(lightSource, 0);
   core.startBufferSource(heavySource, 0);
 
-  return {
-    setIntensity: core.setIntensity,
-    setActive: core.setActive,
-    dispose: core.dispose,
-  };
+  return core;
 }
+
+/** 雷声距离档，决定取用的模板与变体。 */
+type ThunderDistance = 'near' | 'mid' | 'far';
 
 /** 雷声：按强度选择近/中/远变体，播放包络模板合成的雷声纹理。 */
 function createThunderLayer(core: LayerCore): AmbienceLayer {
@@ -702,7 +689,7 @@ function createFireLayer(core: LayerCore): AmbienceLayer {
   /** 触发一次随机音色的响爆；音色与响度补偿定义在 fireTimbre 模块。 */
   function triggerCrackle(): void {
     const when = context.currentTime + 0.01;
-    const bursts = buildFireTimbre(
+    const burst = buildFireTimbre(
       context,
       noiseBuffer,
       core.output,
@@ -710,13 +697,11 @@ function createFireLayer(core: LayerCore): AmbienceLayer {
       core.intensity,
       when,
     );
-    for (const burst of bursts) {
-      core.playBurst(burst.source, burst.nodes, {
-        when: burst.when,
-        duration: burst.duration,
-        offset: burst.offset,
-      });
-    }
+    core.playBurst(burst.source, burst.nodes, {
+      when: burst.when,
+      duration: burst.duration,
+      offset: burst.offset,
+    });
   }
 
   /**
@@ -741,11 +726,7 @@ function createFireLayer(core: LayerCore): AmbienceLayer {
     scheduleCrackle();
   };
 
-  return {
-    setIntensity: core.setIntensity,
-    setActive: core.setActive,
-    dispose: core.dispose,
-  };
+  return core;
 }
 
 export function createAmbienceLayer(

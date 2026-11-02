@@ -11,12 +11,6 @@ export interface AmbienceLayerConfig {
   intensityLabels: readonly string[];
   /** 默认强度，0–1。 */
   defaultValue: number;
-  /**
-   * 强度滑块里的“有效区间”，默认 0–1。
-   * 设成 [0.2, 0.8] 时：滑块 0.2 相当于原来的 0、0.8 相当于原来的 1，
-   * 两端超出的部分按端点处理（0–0.2 都是最小、0.8–1 都是最大）。
-   */
-  intensityRange?: readonly [number, number];
   /** 该声部的最大输出增益，为多声部混音保留余量。 */
   maxGain: number;
   /** 输出电平随强度增长的指数；小于 1 时低强度更响。 */

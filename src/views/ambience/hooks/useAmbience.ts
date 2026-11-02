@@ -37,10 +37,13 @@ export function useAmbience(): AmbienceController {
   let recordingTimer: ReturnType<typeof setInterval> | undefined;
   let recordingStartedAt = 0;
 
+  /** 销毁会话时同步复位面板状态，避免 UI 仍显示播放或录音。 */
   function closeSession(immediate = false): void {
     const previousSession = session;
     session = undefined;
     sessionTask = undefined;
+    activeLayers.value = new Set();
+    resetRecordingState();
     if (!previousSession) return;
     void previousSession.close(immediate).catch(() => {
       if (!disposed) error.value = '音频释放失败，请刷新页面。';
@@ -91,6 +94,12 @@ export function useAmbience(): AmbienceController {
     recordingTimer = undefined;
   }
 
+  /** 结束录音展示状态；会话销毁时录音已随会话取消，不再等待结果。 */
+  function resetRecordingState(): void {
+    clearRecordingTimer();
+    if (recordingStatus.value !== 'idle') recordingStatus.value = 'idle';
+  }
+
   function discardRecording(): void {
     if (recordingUrl.value) URL.revokeObjectURL(recordingUrl.value);
     recordingUrl.value = '';
@@ -125,7 +134,6 @@ export function useAmbience(): AmbienceController {
         if (disposed) return;
         // 上下文不可用时无法保证任何声部能发声，统一回到停止状态。
         error.value = '无法启动环境音，请检查浏览器音频设置后重试。';
-        activeLayers.value = new Set();
         closeSession(true);
         return;
       }
@@ -162,9 +170,10 @@ export function useAmbience(): AmbienceController {
       recordingTimer = setInterval(tickRecording, 250);
     } catch {
       if (disposed) return;
-      recordingStatus.value = 'idle';
+      resetRecordingState();
       error.value = '无法开始录音，请检查浏览器音频设置后重试。';
-      if (!activeLayers.value.size) closeSession(true);
+      // 会话已不可用时，面板不能继续显示声部在播放。
+      if (!session || !session.isRunning()) closeSession(true);
     }
   }
 
@@ -176,17 +185,23 @@ export function useAmbience(): AmbienceController {
   }
 
   async function stopRecording(): Promise<void> {
-    const currentSession = session;
-    if (recordingStatus.value !== 'recording' || !currentSession) return;
-    recordingStatus.value = 'processing';
+    if (recordingStatus.value !== 'recording') return;
     clearRecordingTimer();
+    const currentSession = session;
+    if (!currentSession) {
+      recordingStatus.value = 'idle';
+      return;
+    }
+    recordingStatus.value = 'processing';
     try {
       const result = await currentSession.stopRecording();
       if (!disposed) setRecordingResult(result);
     } catch (reason) {
-      if (!disposed) error.value = reason instanceof Error ? reason.message : '录音失败，请重试。';
+      if (disposed || session !== currentSession) return;
+      error.value = reason instanceof Error ? reason.message : '录音失败，请重试。';
     } finally {
-      if (!disposed) {
+      // 会话已被替换时，录音状态已由 closeSession 复位，不能覆盖新会话的状态。
+      if (!disposed && session === currentSession) {
         recordingStatus.value = 'idle';
         if (!activeLayers.value.size) closeSession();
       }

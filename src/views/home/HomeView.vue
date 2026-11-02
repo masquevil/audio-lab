@@ -271,6 +271,7 @@ import { RouterLink } from 'vue-router';
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (max-width: 600px) {
   .home-page {
     padding: 26px 16px;

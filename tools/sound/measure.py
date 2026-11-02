@@ -65,7 +65,7 @@ def analyse(path: Path) -> dict[str, float]:
     b_decay = float(np.polyfit(b_time, b_level, 1)[0]) if len(b_level) > 10 else 0.0
 
     return {
-        "duration": len(samples) / 48_000,
+        "duration": len(samples) / RATE,
         "attack_ms": peak_index * 10.0,
         "a_seconds": (split - peak_index) * 0.01,
         "b_decay_db_s": b_decay,
