@@ -1,0 +1,6 @@
+# 分析、生成与验收脚本（measure / imitate / acceptance / build-*）
+numpy>=1.26
+
+# judge.py（AudioSet 判定，可选）：首次运行会下载约 350MB 模型
+torch>=2.0
+transformers>=4.40

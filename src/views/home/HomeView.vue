@@ -56,6 +56,33 @@ import { RouterLink } from 'vue-router';
         <div class="vowel-preview">a · o · e · i · u · ü</div>
         <span class="card-action">开始实验 →</span>
       </RouterLink>
+      <RouterLink
+        class="feature-card linked-card"
+        to="/ambience"
+        aria-label="环境音模拟，开始实验"
+      >
+        <div class="card-heading">
+          <span
+            class="feature-icon"
+            aria-hidden="true"
+          >
+            ≋
+          </span>
+          <span class="feature-badge">基础实验</span>
+        </div>
+        <h2 class="card-title">环境音模拟</h2>
+        <p class="card-description">风雨雷火 · 实时合成 · 独立强度 · 混音录音</p>
+        <div
+          class="ambience-preview"
+          aria-hidden="true"
+        >
+          <span>≋</span>
+          <span>☂</span>
+          <span>ϟ</span>
+          <span>♨</span>
+        </div>
+        <span class="card-action">开始实验 →</span>
+      </RouterLink>
     </div>
     <p class="page-footnote">WEB AUDIO API <span>无需安装 · 无需麦克风权限 · 不自动播放</span></p>
   </main>
@@ -97,7 +124,7 @@ import { RouterLink } from 'vue-router';
 // 功能卡片
 .feature-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 
   margin: 28px 0;
@@ -179,6 +206,17 @@ import { RouterLink } from 'vue-router';
     font-size: 12px;
     color: var(--color-text-muted);
   }
+
+  .ambience-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    height: 96px;
+
+    font-size: 22px;
+    color: var(--color-text-muted);
+  }
 }
 
 // 卡片琴键预览
@@ -228,6 +266,11 @@ import { RouterLink } from 'vue-router';
 }
 
 // 窄屏布局
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 600px) {
   .home-page {
     padding: 26px 16px;
