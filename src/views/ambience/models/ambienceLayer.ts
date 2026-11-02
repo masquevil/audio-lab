@@ -212,6 +212,19 @@ function createLfo(context: AudioContext, frequency: number, phase = 0): Oscilla
   return lfo;
 }
 
+/** 单阵风的形状；`at` 相对触发时刻，秒。 */
+interface HowlSwell {
+  at: number;
+  /** 上升到峰值的时长，秒。 */
+  rise: number;
+  /** 从峰值回落的时长，秒。 */
+  fall: number;
+  /** 啸叫门峰值电平。 */
+  level: number;
+  /** 共振中心的起始频率，Hz；峰值与结束频率在此附近随机。 */
+  center: number;
+}
+
 /** 风声：多层独立噪声叠加，强度越高层数越多、层间起伏互相补位。 */
 function createWindLayer(core: LayerCore): AmbienceLayer {
   const context = core.context;
@@ -369,8 +382,7 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
   updateSound();
 
   /**
-   * 呼啸出现的间隔（相邻两次呼啸的起始间隔）随强度收紧：
-   * 阈值（0.8）时 4–10 秒，满强度时 1.2–4.8 秒。
+   * 一阵风结束后的随机等待，随强度收紧：阈值（0.8）时 4–10 秒，满强度时 1.2–4.8 秒。
    */
   function howlInterval(intensity: number): { min: number; max: number } {
     const span = Math.max(1e-3, 1 - HOWL_THRESHOLD);
@@ -378,79 +390,106 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
     return { min: 4 - 2.8 * t, max: 10 - 5.2 * t };
   }
 
-  /** 下一次呼啸的起始时间；阵风时长会按目标间隔收窄，保证不互相截断。 */
+  /** 下一阵风的起始时间；0 表示还没有排程，由 `scheduleHowl` 重新抽随机延迟。 */
   let nextHowlAt = 0;
 
   /**
-   * 阵风事件：整体风量与呼啸同步起伏。
+   * 排入一阵风：整层风量（`gustGain`）与啸叫门（`howlGate`）同步起伏，
+   * 共振中心随阵风上扫，结束时回到静音。返回这一阵结束的上下文时间。
+   */
+  function scheduleSwell(now: number, swell: HowlSwell): number {
+    const start = now + swell.at;
+    const gate = howlGate.gain;
+    const gust = gustGain.gain;
+
+    // 上升分 4 级推上去，避免“从很低一下跳到很高”；下降分 3 级退回。
+    const riseSteps = 4;
+    for (let step = 1; step <= riseSteps; step += 1) {
+      const k = step / riseSteps;
+      const at = start + (swell.rise * step) / riseSteps;
+      gate.setTargetAtTime(swell.level * (0.14 + 0.86 * k), at, 0.3);
+      gust.setTargetAtTime(1.1 + 1.3 * k, at, 0.32);
+    }
+    const fallSteps = 3;
+    for (let step = 1; step <= fallSteps; step += 1) {
+      const k = 1 - step / fallSteps;
+      const at = start + swell.rise + (swell.fall * step) / fallSteps;
+      gate.setTargetAtTime(swell.level * (0.1 + 0.9 * k), at, 0.42);
+      gust.setTargetAtTime(1 + 1.4 * k, at, 0.5);
+    }
+
+    // 这一阵结束后回到静音与基准风量，下一次起伏才是独立的一阵。
+    const end = start + swell.rise + swell.fall;
+    gate.setTargetAtTime(0, end, 0.35);
+    gust.setTargetAtTime(1, end, 0.4);
+
+    // 共振中心随阵风上扫；每个起伏各扫一次，形成独立的呼啸。
+    const peak = swell.center + randomBetween(120, 340);
+    const endHz = swell.center + randomBetween(-120, 220);
+    const glide = (parameter: AudioParam, multiplier: number) => {
+      parameter.cancelScheduledValues(start);
+      parameter.setTargetAtTime(peak * multiplier, start + swell.rise * 0.7, 0.25);
+      parameter.setTargetAtTime(endHz * multiplier, start + swell.rise + swell.fall * 0.85, 0.4);
+    };
+    glide(whistleFilter.frequency, 1);
+    glide(whistleHarmonic.frequency, 1.55);
+
+    return end;
+  }
+
+  /**
+   * 单阵基准时长（秒）：随强度变长，并在 0.65–1.35 倍之间随机。
+   * 基准 2.2 秒（阈值附近）→ 3.2 秒（满强度），随机后约为 1.4–3.0 / 2.1–4.3 秒；
+   * 再乘以下面的上升/下降比例，得到每阵的最终时长。
+   */
+  function swellBaseLength(intensity: number): number {
+    const span = Math.max(1e-3, 1 - HOWL_THRESHOLD);
+    const t = Math.max(0, Math.min(1, (intensity - HOWL_THRESHOLD) / span));
+    return (2.2 + 1.0 * t) * randomBetween(0.65, 1.35);
+  }
+
+  /** 把一段基准时长拆成上升与下降（约 35–50% / 50–65%）。 */
+  function swellShape(base: number): { rise: number; fall: number } {
+    return {
+      rise: base * randomBetween(0.35, 0.5),
+      fall: base * randomBetween(0.5, 0.65),
+    };
+  }
+
+  /**
+   * 触发一次阵风：先起 1 阵，约三成概率再起 1 阵（第二阵更轻）。
    *
-   * 参考 howling-wind 的实测形状是“轻微呼啸 → 风量激增、呼啸变明显 → 快速回落 → 消失”：
-   * 呼啸段约 2.5 秒（上升 0.55 秒、下降 0.95 秒），期间整体风量比中位高约 8dB，
-   * 而且约三分之一的事件里会有第二次起伏。因此这里用同一条包络同时驱动
-   * `gustGain`（整层风量）与 `howlGate`（啸叫强度），并让共振中心随阵风上扫。
-   *
-   * 上升段分 4 级用 setTargetAtTime 逐级推上去，避免“从很低一下跳到很高”；
-   * 阵风总时长控制在目标间隔的 80% 以内，下一次开始时前一次已经收尾。
+   * 参考 howling-wind 的实测形状是“轻微呼啸 → 风量激增、呼啸变明显 → 快速回落 → 消失”，
+   * 约三分之一的事件有第二次起伏。每阵各有自己的上升/下降与共振上扫，
+   * 阵间回到静音；下一阵在本阵结束后重新随机等待，不会被下一次触发截断。
    */
   function triggerHowl(): void {
     if (core.intensity < HOWL_THRESHOLD) return;
     const intensity = core.intensity;
     const now = context.currentTime + 0.05;
     const interval = howlInterval(intensity);
-    const target = randomBetween(interval.min, interval.max);
-    const budget = Math.max(1.2, target * 0.8);
-    const rise = randomBetween(0.5, Math.min(2.0, budget * 0.45));
-    const fall = randomBetween(0.5, Math.min(3.4, budget * 0.55));
-    const length = rise + fall;
-    const start = randomBetween(1000, 1150) + intensity * 220;
-    const peak = start + randomBetween(120, 340);
-    const end = start + randomBetween(-120, 220);
-    // 啸叫要明显：窄带噪声经过 Q≈20 的带通后能量只剩约 -12dB，电平必须远高于主风层。
     const level = randomBetween(2.2, 2.9) + intensity * 0.8;
+    const center = randomBetween(1000, 1150) + intensity * 220;
 
-    const gate = howlGate.gain;
-    const gust = gustGain.gain;
-    gate.cancelScheduledValues(now);
-    gust.cancelScheduledValues(now);
+    howlGate.gain.cancelScheduledValues(now);
+    gustGain.gain.cancelScheduledValues(now);
 
-    // ① 上升：4 级阶梯，每级约 0.3 秒时间常数，听感上是“风逐渐变大”而不是跳变
-    const riseSteps = 4;
-    for (let step = 1; step <= riseSteps; step += 1) {
-      const at = now + (rise * step) / riseSteps;
-      const k = step / riseSteps;
-      gate.setTargetAtTime(level * (0.14 + 0.86 * k), at, 0.3);
-      gust.setTargetAtTime(1.1 + 1.3 * k, at, 0.32);
-    }
-    // ② 下降：同样分级退回，先退到轻微呼啸再消失
-    const fallSteps = 3;
-    for (let step = 1; step <= fallSteps; step += 1) {
-      const at = now + rise + (fall * step) / fallSteps;
-      const k = 1 - step / fallSteps;
-      gate.setTargetAtTime(level * (0.1 + 0.9 * k), at, 0.42);
-      gust.setTargetAtTime(1 + 1.4 * k, at, 0.5);
+    const base = swellBaseLength(intensity);
+    let end = scheduleSwell(now, { at: 0, ...swellShape(base), level, center });
+
+    if (Math.random() < 0.33) {
+      const gap = randomBetween(0.4, 1.0);
+      end = scheduleSwell(now, {
+        at: end + gap - now,
+        ...swellShape(base * randomBetween(0.5, 0.8)),
+        // 第二阵比第一阵轻，保持参考里“第二次起伏较弱”的关系。
+        level: level * 0.85,
+        center: center + randomBetween(-80, 120),
+      });
     }
 
-    // ③ 约三成事件有第二次起伏（只在间隔够长时才加，避免越过下一次呼啸）
-    if (Math.random() < 0.33 && budget - length > 1.4) {
-      const second = now + length * randomBetween(0.35, 0.6);
-      const secondEnd = Math.min(now + budget, second + randomBetween(0.9, 2.0));
-      gate.setTargetAtTime(level * 0.5, second, 0.3);
-      gust.setTargetAtTime(1.7, second, 0.32);
-      gate.setTargetAtTime(level * 0.85, second + 0.45, 0.28);
-      gust.setTargetAtTime(2.15, second + 0.45, 0.3);
-      gate.setTargetAtTime(0, secondEnd, 0.45);
-      gust.setTargetAtTime(1, secondEnd, 0.5);
-    }
-
-    nextHowlAt = now + target;
-
-    const glide = (parameter: AudioParam, multiplier: number) => {
-      parameter.cancelScheduledValues(now);
-      parameter.setTargetAtTime(peak * multiplier, now + rise * 0.7, 0.25);
-      parameter.setTargetAtTime(end * multiplier, now + length * 0.85, 0.4);
-    };
-    glide(whistleFilter.frequency, 1);
-    glide(whistleHarmonic.frequency, 1.55);
+    // 下一阵从本阵结束后重新等待，两次起伏不会把事件顶到下一阵。
+    nextHowlAt = end + randomBetween(interval.min, interval.max);
   }
 
   function scheduleHowl(): void {
@@ -459,7 +498,9 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
       core.schedule(0.6, scheduleHowl);
       return;
     }
-    const wait = Math.max(0.3, nextHowlAt - context.currentTime);
+    // nextHowlAt 还没安排或已经过期时，重新抽一个随机延迟，不再固定等 0.3 秒。
+    const wait =
+      nextHowlAt > context.currentTime ? nextHowlAt - context.currentTime : randomBetween(1, 4);
     core.schedule(wait, () => {
       if (!core.active) return;
       triggerHowl();
@@ -469,7 +510,7 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
 
   core.onActiveChange = (active) => {
     if (active) {
-      core.schedule(randomBetween(0.35, 1.1), triggerHowl);
+      nextHowlAt = 0;
       scheduleHowl();
     } else {
       howlGate.gain.setTargetAtTime(0, context.currentTime, 0.15);
