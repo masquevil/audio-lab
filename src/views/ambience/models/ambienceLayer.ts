@@ -573,10 +573,12 @@ function createThunderLayer(core: LayerCore): AmbienceLayer {
   }
 
   function strike(buffer: AudioBuffer, when: number, gainScale: number, pan: number): void {
-    const duration = buffer.duration;
     const source = context.createBufferSource();
     source.buffer = buffer;
-    source.playbackRate.value = randomBetween(0.97, 1.03);
+    const playbackRate = randomBetween(0.97, 1.03);
+    source.playbackRate.value = playbackRate;
+    // 包络与停止时间都要按实际播放速率换算，否则快放时会在淡出未结束处硬切。
+    const duration = buffer.duration / playbackRate;
     const gain = context.createGain();
     const level = randomBetween(0.75, 1) * gainScale;
     const fadeOut = Math.min(1.2, duration * 0.3);

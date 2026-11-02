@@ -1,5 +1,6 @@
 /**
  * 把产品预设渲染成 WAV，供 judge.py / acceptance.py 判定，或直接试听。
+ * 与产品使用同一纹理入口（雷声含响度归一化），因此输出电平与页面一致。
  *
  *   node tools/sound/render-presets.mjs [--output tmp/sound-out] [--textures]
  *
@@ -11,11 +12,9 @@ import { dirname, resolve } from 'node:path';
 import {
   getEmberBedTexture,
   getRainTexture,
+  getThunderTexture,
 } from '../../src/views/ambience/models/ambienceTexture.ts';
-import {
-  createThunderEnvelopeTexture,
-  thunderAudioPresets,
-} from '../../src/views/ambience/models/thunderEnvelope.ts';
+import { thunderAudioPresets } from '../../src/views/ambience/models/thunderEnvelope.ts';
 
 const rate = 48_000;
 const outputFlag = process.argv.indexOf('--output');
@@ -61,9 +60,9 @@ if (withTextures) {
   render('rain-heavy', getRainTexture(rate, 'heavy'));
   render('fire-bed', getEmberBedTexture(rate));
 } else {
-  for (const [name, options] of Object.entries(thunderAudioPresets)) {
+  for (const name of Object.keys(thunderAudioPresets)) {
     const start = performance.now();
-    const texture = createThunderEnvelopeTexture(rate, options);
+    const texture = getThunderTexture(rate, name);
     render(`thunder-${name}`, texture);
     console.log(`  渲染 ${(performance.now() - start).toFixed(0)}ms`);
   }

@@ -29,7 +29,7 @@ pip install -r tools/sound/requirements.txt
 | `judge.py` | AudioSet 人类标注模型的类别概率（第三方判据） |
 | `build-envelope-data.py` | 由参考录音生成 `src/views/ambience/models/thunderEnvelopes.ts` |
 | `build-rain-envelope.py` | 由参考录音生成 `src/views/ambience/models/rainLightEnvelope.ts`（27 段，含 8k/10k/12.5k） |
-| `render-presets.mjs` | 把产品预设渲染成 WAV（`--textures` 额外输出雨纹理与篝火底纹，用于判定与试听） |
+| `render-presets.mjs` | 把产品预设渲染成 WAV（雷声走产品归一化路径；`--textures` 额外输出雨纹理与篝火底纹，用于判定与试听） |
 | `common.py` | 共用：解码、频段分析、噪声重建、指标 |
 
 ## 参考音频
