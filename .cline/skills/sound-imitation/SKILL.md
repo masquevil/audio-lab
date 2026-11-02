@@ -15,7 +15,7 @@ description: 需要合成或改进以噪声/纹理为主的环境声（雷、雨
 
 1. **参考集**：同一类声音 6–10 段，放本地忽略目录，不进仓库。
 2. **分析**：`python3 tools/sound/measure.py <wav>...` 得到 A/B 结构；`python3 tools/sound/acceptance.py` 得到各维度的参考范围。
-3. **临摹**：`python3 tools/sound/imitate.py <wav> --output tmp/sound-out`。平滑包络相关应 ≥0.95、误差 ≤4dB。**临摹不过关先修引擎，不要调生成参数。**
+3. **临摹**：`python3 tools/sound/imitate.py <wav> --output /tmp/sound-out`。平滑包络相关应 ≥0.95、误差 ≤4dB。**临摹不过关先修引擎，不要调生成参数。**
 4. **生成**：用模板 + 温和变形（时间伸缩、频谱倾斜、增益、随机种子）。典型参数见 measurements.md。
 5. **验收**：`tools/sound/judge.py`（与模板原声同档）+ `acceptance.py`（越界 ≤1）+ 浏览器实测 + 人耳 A/B 分段确认。
 

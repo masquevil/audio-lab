@@ -25,6 +25,13 @@ export function useAudioBus(): AudioBusController {
 
   onUnmounted(() => bus?.dispose());
 
-  const acquire: AcquireAudioBus = bus ? bus.acquire : acquireNothing;
+  // 上一次释放失败不影响新实例；重新取用成功即清掉旧提示。
+  const acquire: AcquireAudioBus = bus
+    ? async () => {
+        const lease = await bus.acquire();
+        if (lease) error.value = '';
+        return lease;
+      }
+    : acquireNothing;
   return { supported, error: readonly(error), acquire };
 }

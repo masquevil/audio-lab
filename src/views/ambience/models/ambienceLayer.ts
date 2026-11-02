@@ -6,10 +6,10 @@ import {
   getEmberBedTexture,
   getRainTexture,
   getThunderTexture,
-  thunderTexturePresets,
   toAudioBuffer,
 } from './ambienceTexture';
 import { buildFireTimbre, fireClusterOffsets, nextFireDelay, pickFireTimbre } from './fireTimbre';
+import { thunderAudioPresetIds } from './thunderEnvelope';
 import type { ThunderAudioPreset } from './thunderEnvelope';
 
 export interface AmbienceLayer {
@@ -326,19 +326,28 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
   core.startSource(howlDrift);
 
   /** 只有最强风才允许啸叫；弱风/中风只保留主风层。 */
-  const HOWL_THRESHOLD = 0.8;
+  const howlThreshold = 0.8;
+
+  /**
+   * 撤销已排入未来的阵风自动化，把啸叫门与整体风量收回静止值。
+   * 停用或强度降到阈值以下时必须调用：残留的 setTargetAtTime 会在之后
+   * 重新抬高啸叫门与风量，听感上“啸叫消失后又冒出来”。
+   */
+  function cancelHowlAutomation(gateRelease: number): void {
+    const now = context.currentTime;
+    howlGate.gain.cancelScheduledValues(now);
+    howlGate.gain.setTargetAtTime(0, now, gateRelease);
+    gustGain.gain.cancelScheduledValues(now);
+    gustGain.gain.setTargetAtTime(1, now, 0.3);
+    // 共振中心也按阵风排程；取消后停在最后取值，等下一次阵风重新上扫。
+    whistleFilter.frequency.cancelScheduledValues(now);
+    whistleHarmonic.frequency.cancelScheduledValues(now);
+  }
 
   function updateSound(): void {
     const intensity = core.intensity;
     const now = context.currentTime;
-    if (intensity < HOWL_THRESHOLD) {
-      // 降回阈值以下时，已排入未来的阵风自动化必须一起清空：
-      // 否则它会在后面的时间点重新抬高啸叫门与风量，听感上“啸叫消失后又冒出来”。
-      howlGate.gain.cancelScheduledValues(now);
-      howlGate.gain.setTargetAtTime(0, now, 0.18);
-      gustGain.gain.cancelScheduledValues(now);
-      gustGain.gain.setTargetAtTime(1, now, 0.3);
-    }
+    if (intensity < howlThreshold) cancelHowlAutomation(0.18);
     const activeVoices = intensity < 0.35 ? 1 : intensity < 0.7 ? 2 : 3;
     // 多层风各自起伏；保留最低电平，飓风时不会所有层同时归零。
     const baseGain = 0.65 + 0.15 * intensity;
@@ -385,8 +394,8 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
    * 一阵风结束后的随机等待，随强度收紧：阈值（0.8）时 4–10 秒，满强度时 1.2–4.8 秒。
    */
   function howlInterval(intensity: number): { min: number; max: number } {
-    const span = Math.max(1e-3, 1 - HOWL_THRESHOLD);
-    const t = Math.max(0, Math.min(1, (intensity - HOWL_THRESHOLD) / span));
+    const span = Math.max(1e-3, 1 - howlThreshold);
+    const t = Math.max(0, Math.min(1, (intensity - howlThreshold) / span));
     return { min: 4 - 2.8 * t, max: 10 - 5.2 * t };
   }
 
@@ -443,8 +452,8 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
    * 再乘以下面的上升/下降比例，得到每阵的最终时长。
    */
   function swellBaseLength(intensity: number): number {
-    const span = Math.max(1e-3, 1 - HOWL_THRESHOLD);
-    const t = Math.max(0, Math.min(1, (intensity - HOWL_THRESHOLD) / span));
+    const span = Math.max(1e-3, 1 - howlThreshold);
+    const t = Math.max(0, Math.min(1, (intensity - howlThreshold) / span));
     return (2.2 + 1.0 * t) * randomBetween(0.65, 1.35);
   }
 
@@ -464,7 +473,7 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
    * 阵间回到静音；下一阵在本阵结束后重新随机等待，不会被下一次触发截断。
    */
   function triggerHowl(): void {
-    if (core.intensity < HOWL_THRESHOLD) return;
+    if (core.intensity < howlThreshold) return;
     const intensity = core.intensity;
     const now = context.currentTime + 0.05;
     const interval = howlInterval(intensity);
@@ -494,7 +503,7 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
 
   function scheduleHowl(): void {
     const intensity = core.intensity;
-    if (intensity < HOWL_THRESHOLD) {
+    if (intensity < howlThreshold) {
       core.schedule(0.6, scheduleHowl);
       return;
     }
@@ -513,8 +522,8 @@ function createWindLayer(core: LayerCore): AmbienceLayer {
       nextHowlAt = 0;
       scheduleHowl();
     } else {
-      howlGate.gain.setTargetAtTime(0, context.currentTime, 0.15);
-      gustGain.gain.setTargetAtTime(1, context.currentTime, 0.3);
+      // 停用同样要撤销已排入未来的阵风，否则重新启用时会先冒出上一阵的尾巴。
+      cancelHowlAutomation(0.15);
     }
   };
 
@@ -680,7 +689,7 @@ function createThunderLayer(core: LayerCore): AmbienceLayer {
       scheduleStorm();
     });
     // 错开生成其余变体，把渲染成本摊到播放过程中，避免一次冻结主线程。
-    thunderTexturePresets.forEach((preset, index) => {
+    thunderAudioPresetIds.forEach((preset, index) => {
       core.schedule(1.2 + index * 1.5, () => bufferFor(preset));
     });
   };

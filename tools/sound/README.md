@@ -47,17 +47,19 @@ pip install -r tools/sound/requirements.txt
 
 ## 典型用法
 
+输出默认写到系统临时目录 `/tmp/sound-out`，可用 `--output` 指定其他目录。
+
 ```bash
 # 1. 看参考结构
 python3 tools/sound/measure.py <refs>/*.wav
 
 # 2. 验证引擎能否临摹
-python3 tools/sound/imitate.py <refs>/event-1.wav --output tmp/sound-out
+python3 tools/sound/imitate.py <refs>/event-1.wav --output /tmp/sound-out
 
 # 3. 渲染产品预设并验收
-node tools/sound/render-presets.mjs --output tmp/sound-out
-python3 tools/sound/acceptance.py tmp/sound-out/*.wav --references <refs>
-HF_HUB_OFFLINE=1 python3 tools/sound/judge.py tmp/sound-out/*.wav <refs>/event-1.wav
+node tools/sound/render-presets.mjs --output /tmp/sound-out
+python3 tools/sound/acceptance.py /tmp/sound-out/*.wav --references <refs>
+HF_HUB_OFFLINE=1 python3 tools/sound/judge.py /tmp/sound-out/*.wav <refs>/event-1.wav
 
 # 4. 改模板后重新生成产品数据
 python3 tools/sound/build-envelope-data.py --references <refs> \

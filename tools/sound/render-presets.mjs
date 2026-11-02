@@ -2,7 +2,7 @@
  * 把产品预设渲染成 WAV，供 judge.py / acceptance.py 判定，或直接试听。
  * 与产品使用同一纹理入口（雷声含响度归一化），因此输出电平与页面一致。
  *
- *   node tools/sound/render-presets.mjs [--output tmp/sound-out] [--textures]
+ *   node tools/sound/render-presets.mjs [--output /tmp/sound-out] [--textures]
  *
  * --textures 额外渲染雨/火纹理（不含雷）。
  */
@@ -14,11 +14,11 @@ import {
   getRainTexture,
   getThunderTexture,
 } from '../../src/views/ambience/models/ambienceTexture.ts';
-import { thunderAudioPresets } from '../../src/views/ambience/models/thunderEnvelope.ts';
+import { thunderAudioPresetIds } from '../../src/views/ambience/models/thunderEnvelope.ts';
 
 const rate = 48_000;
 const outputFlag = process.argv.indexOf('--output');
-const outputDir = outputFlag > -1 ? process.argv[outputFlag + 1] : 'tmp/sound-out';
+const outputDir = outputFlag > -1 ? process.argv[outputFlag + 1] : '/tmp/sound-out';
 const withTextures = process.argv.includes('--textures');
 
 function writeWav(path, texture) {
@@ -60,7 +60,7 @@ if (withTextures) {
   render('rain-heavy', getRainTexture(rate, 'heavy'));
   render('fire-bed', getEmberBedTexture(rate));
 } else {
-  for (const name of Object.keys(thunderAudioPresets)) {
+  for (const name of thunderAudioPresetIds) {
     const start = performance.now();
     const texture = getThunderTexture(rate, name);
     render(`thunder-${name}`, texture);

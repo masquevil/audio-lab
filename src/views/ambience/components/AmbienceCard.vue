@@ -106,6 +106,12 @@ function handleToggleClick(): void {
     border-color: var(--color-accent);
     box-shadow: inset 0 0 0 1px var(--color-accent-soft);
   }
+
+  &.active-card .layer-toggle {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
 }
 
 // 声部标题与播放开关
@@ -170,12 +176,6 @@ function handleToggleClick(): void {
       filter: brightness(1.12);
     }
   }
-}
-
-.active-card .layer-toggle {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
 }
 
 // 强度滑块与两端描述

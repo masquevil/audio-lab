@@ -77,8 +77,15 @@ export function createAudioBus(options: AudioBusOptions = {}): AudioBus {
       try {
         if (!immediate && current.context.state === 'running') {
           const now = current.context.currentTime;
-          current.input.gain.cancelAndHoldAtTime(now);
-          current.input.gain.linearRampToValueAtTime(0, now + fadeOutSeconds);
+          const { gain } = current.input;
+          if (typeof gain.cancelAndHoldAtTime === 'function') {
+            gain.cancelAndHoldAtTime(now);
+          } else {
+            // Safari 未实现 cancelAndHoldAtTime：撤销未来事件并固定当前值，再从这里淡出。
+            gain.cancelScheduledValues(now);
+            gain.setValueAtTime(gain.value, now);
+          }
+          gain.linearRampToValueAtTime(0, now + fadeOutSeconds);
           await new Promise<void>((resolve) => setTimeout(resolve, fadeOutWait));
         }
       } finally {

@@ -2,7 +2,7 @@
 structure? Reports per-band envelope correlation and overall envelope error.
 
 Usage:
-    python3 tools/sound/imitate.py <recording.wav> [--output DIR]
+    python3 tools/sound/imitate.py <recording.wav> [--output /tmp/sound-out]
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def imitate_file(source: Path, output: Path) -> dict[str, float]:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("recordings", nargs="+", type=Path)
-    parser.add_argument("--output", type=Path, default=Path("tmp/sound-out"))
+    parser.add_argument("--output", type=Path, default=Path("/tmp/sound-out"))
     arguments = parser.parse_args()
     for recording in arguments.recordings:
         target = arguments.output / f"imitate-{recording.stem}.wav"

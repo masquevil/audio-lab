@@ -60,7 +60,7 @@ tonality 需要标定（本项目实测）：宽带噪声 80–600Hz = **0.16**�
 
 ## 声部响度（端到端实测）
 
-测法：`createAmbienceSession()` 只开一个声部、默认强度，录 `MediaRecorder` 输出，解码后算整段 RMS（含压限器）。数字为浏览器实测；篝火增益在测量后调整过（现为 2.2 / 0.6），该行 RMS 待复测。
+测法：`createAudioBus()` + `createAmbienceMix()` 只开一个声部、默认强度，从总线 `output` 录 `MediaRecorder` 输出，解码后算整段 RMS（含压限器）。数字为浏览器实测；篝火增益在测量后调整过（现为 2.2 / 0.6），该行 RMS 待复测。
 
 | 声部 | 纹理基准 | `maxGain` / `gainCurve` | 实测 RMS |
 | --- | --- | --- | --- |

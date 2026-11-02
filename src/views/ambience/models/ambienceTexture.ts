@@ -408,15 +408,6 @@ function createRainLightTexture(rate: number, seed: number): StereoTexture {
   return makeSeamlessLoop(rendered.left, rendered.right, loopSeconds, 1, rate);
 }
 
-/** 近/中/远三档，每档提供“纯滚动”和“带起爆”两种变体；起爆只占少数。 */
-export const thunderTexturePresets: readonly ThunderAudioPreset[] = [
-  'nearRoll',
-  'nearCrack',
-  'midRoll',
-  'midCrack',
-  'farRoll',
-];
-
 /** 首次用到某个变体时才渲染，避免一次生成全部雷声纹理阻塞主线程。 */
 export function getThunderTexture(rate: number, preset: ThunderAudioPreset): StereoTexture {
   return cachedTexture(`thunder-envelope:${rate}:${preset}`, () => {
