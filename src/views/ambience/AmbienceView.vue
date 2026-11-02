@@ -2,26 +2,38 @@
 import { computed } from 'vue';
 
 import AmbienceCard from './components/AmbienceCard.vue';
-import { ambienceLayers, layerIds, maxRecordingSeconds } from './constants/ambience';
+import {
+  ambienceLayers,
+  layerIds,
+  maxRecordingSeconds,
+  recordingFileNamePrefix,
+} from './constants/ambience';
+import { useAudioBus } from './hooks/useAudioBus';
 import { useAmbience } from './hooks/useAmbience';
+import { useRecorder } from './hooks/useRecorder';
 import type { AmbienceLayerId } from './types/ambience';
 
+const audioBus = useAudioBus();
+const { supported, error: audioBusError } = audioBus;
+
+const { intensities, activeLayers, error, toggleLayer, setIntensity } = useAmbience(audioBus);
+
+// 录音作为独立消费者组合在页面层：只借用页面总线输出，不参与声部与总线生命周期。
+const recorder = useRecorder(audioBus, {
+  fileNamePrefix: recordingFileNamePrefix,
+  maxSeconds: maxRecordingSeconds,
+});
+
 const {
-  intensities,
-  activeLayers,
-  error,
-  supported,
-  recordingSupported,
-  recordingStatus,
-  recordingSeconds,
-  recordingUrl,
-  recordingFileName,
-  toggleLayer,
-  setIntensity,
-  startRecording,
-  stopRecording,
-  discardRecording,
-} = useAmbience();
+  supported: recordingSupported,
+  status: recordingStatus,
+  seconds: recordingSeconds,
+  result: recordingResult,
+  error: recordingError,
+  start: startRecording,
+  stop: stopRecording,
+  discard: discardRecording,
+} = recorder;
 
 const activeCount = computed(() => activeLayers.value.size);
 const recordingButtonLabel = computed(() => {
@@ -94,6 +106,20 @@ function handleRecordingToggle(): void {
     >
       {{ error }}
     </p>
+    <p
+      v-if="audioBusError"
+      class="audio-alert"
+      role="alert"
+    >
+      {{ audioBusError }}
+    </p>
+    <p
+      v-if="recordingError"
+      class="audio-alert"
+      role="alert"
+    >
+      {{ recordingError }}
+    </p>
 
     <section
       class="mixer-grid"
@@ -163,20 +189,20 @@ function handleRecordingToggle(): void {
       </div>
 
       <div
-        v-if="recordingUrl"
+        v-if="recordingResult"
         class="recording-result"
       >
         <audio
           class="recording-player"
-          :src="recordingUrl"
+          :src="recordingResult.url"
           controls
           preload="metadata"
         />
         <div class="recording-links">
           <a
             class="recording-download"
-            :href="recordingUrl"
-            :download="recordingFileName"
+            :href="recordingResult.url"
+            :download="recordingResult.fileName"
           >
             下载录音
           </a>

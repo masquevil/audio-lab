@@ -23,29 +23,11 @@ export interface AmbienceLayerConfig {
   minLevelRatio?: number;
 }
 
-export interface AmbienceRecording {
-  blob: Blob;
-  /** 与 MIME 对应的文件扩展名。 */
-  extension: string;
-}
-
-export type RecordingStatus = 'idle' | 'starting' | 'recording' | 'processing';
-
 export interface AmbienceController {
   intensities: DeepReadonly<Ref<Record<AmbienceLayerId, number>>>;
   activeLayers: DeepReadonly<Ref<Set<AmbienceLayerId>>>;
+  /** 声部启动与混音错误；总线与录音的错误由各自模块报告。 */
   error: Readonly<Ref<string>>;
-  supported: boolean;
-  recordingSupported: boolean;
-  recordingStatus: Readonly<Ref<RecordingStatus>>;
-  /** 已录制时长，秒；达到上限后自动停止。 */
-  recordingSeconds: Readonly<Ref<number>>;
-  /** 最近一次录音的可播放地址，空字符串表示没有结果。 */
-  recordingUrl: Readonly<Ref<string>>;
-  recordingFileName: Readonly<Ref<string>>;
   toggleLayer(id: AmbienceLayerId): Promise<void>;
   setIntensity(id: AmbienceLayerId, value: number): void;
-  startRecording(): void;
-  stopRecording(): Promise<void>;
-  discardRecording(): void;
 }

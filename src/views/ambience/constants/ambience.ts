@@ -54,3 +54,6 @@ export const defaultIntensities: Record<AmbienceLayerId, number> = {
 
 /** 录音上限，秒；避免长时间占据内存。 */
 export const maxRecordingSeconds = 300;
+
+/** 录音文件名前缀，扩展名由浏览器实际容器决定。 */
+export const recordingFileNamePrefix = 'ambience-mix';

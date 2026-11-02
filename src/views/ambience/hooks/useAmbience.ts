@@ -1,15 +1,11 @@
 import { onUnmounted, readonly, ref } from 'vue';
 
-import { defaultIntensities, maxRecordingSeconds } from '../constants/ambience';
-import { createAmbienceSession } from '../models/ambienceSession';
-import type { AmbienceSession } from '../models/ambienceSession';
+import { defaultIntensities } from '../constants/ambience';
+import { createAmbienceMix } from '../models/ambienceMix';
+import type { AmbienceMix } from '../models/ambienceMix';
 import { clearTextureCache, textureWarmupTasks } from '../models/ambienceTexture';
-import type {
-  AmbienceController,
-  AmbienceLayerId,
-  AmbienceRecording,
-  RecordingStatus,
-} from '../types/ambience';
+import type { AmbienceController, AmbienceLayerId } from '../types/ambience';
+import type { AudioBusHost, AudioBusLease } from '../types/audioBus';
 
 /** 预生成纹理时假设的采样率；多数设备为 48kHz，不一致时首次播放会重新生成。 */
 const warmupSampleRate = 48_000;
@@ -27,31 +23,16 @@ function cancelIdle(handle: number): void {
   else window.clearTimeout(handle);
 }
 
-function formatTimestamp(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return [
-    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`,
-    `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`,
-  ].join('-');
-}
-
-/** 将环境音会话、混音状态和录音结果绑定到 Vue 生命周期。 */
-export function useAmbience(): AmbienceController {
+/** 将声部状态绑定到 Vue 生命周期；上下文与限幅由页面总线负责。 */
+export function useAmbience(host: AudioBusHost): AmbienceController {
   const intensities = ref<Record<AmbienceLayerId, number>>({ ...defaultIntensities });
   const activeLayers = ref(new Set<AmbienceLayerId>());
   const error = ref('');
-  const recordingStatus = ref<RecordingStatus>('idle');
-  const recordingSeconds = ref(0);
-  const recordingUrl = ref('');
-  const recordingFileName = ref('');
-  const supported = typeof window.AudioContext === 'function';
-  const recordingSupported = supported && typeof window.MediaRecorder === 'function';
 
-  let session: AmbienceSession | undefined;
-  let sessionTask: Promise<AmbienceSession | undefined> | undefined;
+  let mix: AmbienceMix | undefined;
+  let mixTask: Promise<AmbienceMix | undefined> | undefined;
+  let lease: AudioBusLease | undefined;
   let disposed = false;
-  let recordingTimer: ReturnType<typeof setInterval> | undefined;
-  let recordingStartedAt = 0;
   let idleHandle: number | undefined;
 
   function stopWarmup(): void {
@@ -69,7 +50,7 @@ export function useAmbience(): AmbienceController {
     const tasks = textureWarmupTasks(warmupSampleRate);
     const run = (): void => {
       idleHandle = undefined;
-      if (disposed || session) return;
+      if (disposed || mix) return;
       const task = tasks.shift();
       if (!task) return;
       try {
@@ -82,83 +63,62 @@ export function useAmbience(): AmbienceController {
     idleHandle = scheduleIdle(run);
   }
 
-  /** 销毁会话时同步复位面板状态，避免 UI 仍显示播放或录音。 */
-  function closeSession(immediate = false): void {
-    const previousSession = session;
-    session = undefined;
-    sessionTask = undefined;
+  /** 总线被销毁时，声部图与租约同时失效，面板回到停止状态。 */
+  function handleLeaseLost(): void {
     activeLayers.value = new Set();
-    resetRecordingState();
-    if (!previousSession) return;
-    void previousSession.close(immediate).catch(() => {
-      if (!disposed) error.value = '音频释放失败，请刷新页面。';
-    });
+    releaseMix(true);
   }
 
-  /**
-   * 打开并恢复会话；同一时间只允许一个恢复任务。
-   * 浏览器可能在后台或中断后挂起上下文，因此每次用户手势都确认它处于运行状态。
-   */
-  async function ensureSession(): Promise<AmbienceSession | undefined> {
-    if (!sessionTask) {
-      const task = openSession().catch((reason: unknown) => {
-        if (sessionTask === task) sessionTask = undefined;
-        throw reason;
-      });
-      sessionTask = task;
+  /** 释放声部图并归还总线；最后一个借用方会让总线淡出并关闭实例。 */
+  function releaseMix(immediate = false): void {
+    const currentLease = lease;
+    const currentMix = mix;
+    lease = undefined;
+    mix = undefined;
+    // 仍在创建中的任务保持复用，避免并发点击产生两个声部图。
+    if (currentMix) mixTask = undefined;
+    currentMix?.dispose(immediate);
+    currentLease?.release();
+  }
+
+  /** 取得总线并建立本页声部图；同一时间只允许一个创建任务。 */
+  async function openMix(): Promise<AmbienceMix | undefined> {
+    const nextLease = await host.acquire();
+    if (!nextLease) return undefined;
+    if (disposed) {
+      nextLease.release();
+      return undefined;
     }
-    const current = await sessionTask;
-    if (current && current === session && !current.isRunning()) await current.resume();
-    return current;
-  }
-
-  async function openSession(): Promise<AmbienceSession | undefined> {
-    const nextSession = createAmbienceSession();
-    session = nextSession;
+    let nextMix: AmbienceMix;
     try {
-      await nextSession.resume();
+      nextMix = createAmbienceMix(nextLease.context, nextLease.input);
     } catch (reason) {
-      const isCurrentSession = session === nextSession;
-      if (isCurrentSession) {
-        session = undefined;
-        sessionTask = undefined;
-      }
-      await nextSession.close(true).catch(() => {
-        // 保留恢复失败的原始原因。
-      });
-      // 会话在恢复期间已被取消或替换，失败不属于当前状态。
-      if (!isCurrentSession) return undefined;
+      // 建立失败时归还总线，避免留下无人使用的实例。
+      nextLease.release();
       throw reason;
     }
-    return nextSession;
+    nextLease.onLost(handleLeaseLost);
+    lease = nextLease;
+    mix = nextMix;
+    return nextMix;
   }
 
-  function clearRecordingTimer(): void {
-    if (!recordingTimer) return;
-    clearInterval(recordingTimer);
-    recordingTimer = undefined;
-  }
-
-  /** 结束录音展示状态；会话销毁时录音已随会话取消，不再等待结果。 */
-  function resetRecordingState(): void {
-    clearRecordingTimer();
-    if (recordingStatus.value !== 'idle') recordingStatus.value = 'idle';
-  }
-
-  function discardRecording(): void {
-    if (recordingUrl.value) URL.revokeObjectURL(recordingUrl.value);
-    recordingUrl.value = '';
-    recordingFileName.value = '';
-  }
-
-  function setRecordingResult(result: AmbienceRecording): void {
-    discardRecording();
-    recordingUrl.value = URL.createObjectURL(result.blob);
-    recordingFileName.value = `ambience-mix-${formatTimestamp(new Date())}.${result.extension}`;
+  function ensureMix(): Promise<AmbienceMix | undefined> {
+    mixTask ??= openMix()
+      .then((current) => {
+        // 本次未取得总线（被取消或页面已卸载）时允许下次重试。
+        if (!current) mixTask = undefined;
+        return current;
+      })
+      .catch((reason: unknown) => {
+        mixTask = undefined;
+        throw reason;
+      });
+    return mixTask;
   }
 
   async function toggleLayer(id: AmbienceLayerId): Promise<void> {
-    if (!supported || disposed) return;
+    if (!host.supported || disposed) return;
     const nextActive = new Set(activeLayers.value);
     const enable = !nextActive.has(id);
     if (enable) nextActive.add(id);
@@ -167,117 +127,49 @@ export function useAmbience(): AmbienceController {
     error.value = '';
 
     if (!enable) {
-      session?.setLayerActive(id, false);
-    } else {
-      try {
-        const current = await ensureSession();
-        if (!current || disposed || current !== session) return;
-        current.setLayerIntensity(id, intensities.value[id]);
-        // 恢复期间用户可能已撤销选择，以最新状态为准。
-        current.setLayerActive(id, activeLayers.value.has(id));
-      } catch {
-        if (disposed) return;
-        // 上下文不可用时无法保证任何声部能发声，统一回到停止状态。
-        error.value = '无法启动环境音，请检查浏览器音频设置后重试。';
-        closeSession(true);
-        return;
-      }
+      mix?.setLayerActive(id, false);
+      if (!nextActive.size) releaseMix();
+      return;
     }
 
-    if (!activeLayers.value.size && recordingStatus.value === 'idle') closeSession();
+    try {
+      const current = await ensureMix();
+      if (!current || disposed) return;
+      current.setLayerIntensity(id, intensities.value[id]);
+      // 等待总线期间用户可能已撤销选择，以最新状态为准。
+      current.setLayerActive(id, activeLayers.value.has(id));
+      // 等待期间用户可能已关闭全部声部，此时不再保留空转的声部图。
+      if (!activeLayers.value.size) releaseMix();
+    } catch {
+      if (disposed) return;
+      // 上下文不可用时无法保证任何声部能发声，统一回到停止状态。
+      activeLayers.value = new Set();
+      error.value = '无法启动环境音，请检查浏览器音频设置后重试。';
+      releaseMix();
+    }
   }
 
   function setIntensity(id: AmbienceLayerId, value: number): void {
     if (!Number.isFinite(value)) return;
     const nextValue = Math.min(1, Math.max(0, value));
     intensities.value = { ...intensities.value, [id]: nextValue };
-    session?.setLayerIntensity(id, nextValue);
-  }
-
-  function startRecording(): void {
-    if (!recordingSupported || disposed || recordingStatus.value !== 'idle') return;
-    error.value = '';
-    recordingStatus.value = 'starting';
-    void beginRecording();
-  }
-
-  async function beginRecording(): Promise<void> {
-    try {
-      const current = await ensureSession();
-      if (!current || disposed || current !== session) {
-        if (!disposed) recordingStatus.value = 'idle';
-        return;
-      }
-      current.startRecording();
-      recordingStatus.value = 'recording';
-      recordingSeconds.value = 0;
-      recordingStartedAt = Date.now();
-      recordingTimer = setInterval(tickRecording, 250);
-    } catch {
-      if (disposed) return;
-      resetRecordingState();
-      error.value = '无法开始录音，请检查浏览器音频设置后重试。';
-      // 会话已不可用时，面板不能继续显示声部在播放。
-      if (!session || !session.isRunning()) closeSession(true);
-    }
-  }
-
-  function tickRecording(): void {
-    if (recordingStatus.value !== 'recording') return;
-    const elapsed = (Date.now() - recordingStartedAt) / 1000;
-    recordingSeconds.value = Math.min(elapsed, maxRecordingSeconds);
-    if (elapsed >= maxRecordingSeconds) void stopRecording();
-  }
-
-  async function stopRecording(): Promise<void> {
-    if (recordingStatus.value !== 'recording') return;
-    clearRecordingTimer();
-    const currentSession = session;
-    if (!currentSession) {
-      recordingStatus.value = 'idle';
-      return;
-    }
-    recordingStatus.value = 'processing';
-    try {
-      const result = await currentSession.stopRecording();
-      if (!disposed) setRecordingResult(result);
-    } catch (reason) {
-      if (disposed || session !== currentSession) return;
-      error.value = reason instanceof Error ? reason.message : '录音失败，请重试。';
-    } finally {
-      // 会话已被替换时，录音状态已由 closeSession 复位，不能覆盖新会话的状态。
-      if (!disposed && session === currentSession) {
-        recordingStatus.value = 'idle';
-        if (!activeLayers.value.size) closeSession();
-      }
-    }
+    mix?.setLayerIntensity(id, nextValue);
   }
 
   onUnmounted(() => {
     disposed = true;
     stopWarmup();
-    clearRecordingTimer();
-    discardRecording();
-    closeSession(true);
+    releaseMix(true);
     clearTextureCache();
   });
 
-  if (supported) warmupTextures();
+  if (host.supported) warmupTextures();
 
   return {
     intensities: readonly(intensities),
     activeLayers: readonly(activeLayers),
     error: readonly(error),
-    supported,
-    recordingSupported,
-    recordingStatus: readonly(recordingStatus),
-    recordingSeconds: readonly(recordingSeconds),
-    recordingUrl: readonly(recordingUrl),
-    recordingFileName: readonly(recordingFileName),
     toggleLayer,
     setIntensity,
-    startRecording,
-    stopRecording,
-    discardRecording,
   };
 }
