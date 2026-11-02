@@ -31,6 +31,8 @@ pnpm check
 | `src/assets/` | 静态资源、共享样式、主题与基础重置 |
 | `src/router/` | 路由实例；typed-router.d.ts 自动生成，不手改 |
 | `tests/` | 单元测试；现状和执行方式见 [说明](tests/README.md) |
+| `tools/` | 开发期工具脚本（如参考音频分析、数据表生成），不参与构建；说明见各目录 README |
+| `docs/` | 长期方法、实测基准等参考文档；执行步骤放 `.cline/skills/` |
 
 私有实现就近放置，真正共享时再提取；组件专属 Props、Emits 留在组件内。共享层不依赖具体页面。不创建空架构目录。
 

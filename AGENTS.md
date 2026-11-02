@@ -13,6 +13,7 @@
 - 开发、修复、评审需求时读取 [.cline/skills/feature-flow/SKILL.md](.cline/skills/feature-flow/SKILL.md)。
 - 开发按 [.cline/skills/dev-cs-vue/SKILL.md](.cline/skills/dev-cs-vue/SKILL.md) 执行；交付前进入 code-review 阶段，读取审查流程与详细清单。code-review 只负责最终代码的规范、设计和技术审查，不以了解产品功能为前提。研发验证、QA 和 PM 验收另按需求流程执行；不把场景测试、故障注入或功能验收纳入 reviewer 职责。
 - 涉及声音或 Web Audio 生命周期时额外读取 [.cline/skills/web-audio/SKILL.md](.cline/skills/web-audio/SKILL.md)。
+- 合成或改进以噪声/纹理为主的环境声（雷、雨、风、火等），需要判断"像不像真实录音"时，读取 [.cline/skills/sound-imitation/SKILL.md](.cline/skills/sound-imitation/SKILL.md)，方法细节与实测基准在 [docs/sound-synthesis](docs/sound-synthesis/method.md)。
 - 修改文档、规范或 skill，整理反馈与经验时读取 [.cline/skills/doc-maintenance/SKILL.md](.cline/skills/doc-maintenance/SKILL.md)，按其文件职责和更新流程选择落点。
 
 这些是项目内文件，若客户端没有自动发现 skills，直接读取对应文件；不要声称已调用不存在的工具。保持 skills 小而专一，只将重复出现的项目经验提炼进去。

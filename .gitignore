@@ -15,6 +15,10 @@ dist-ssr
 coverage
 *.local
 
+# Python 工具脚本（tools/）
+__pycache__/
+*.pyc
+
 # ESLint 缓存（create-vue 模板）
 .eslintcache
 

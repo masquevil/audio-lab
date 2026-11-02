@@ -26,6 +26,12 @@ import { RouterLink } from 'vue-router';
       >
         人声模拟
       </RouterLink>
+      <RouterLink
+        class="navigation-link"
+        to="/ambience"
+      >
+        环境音模拟
+      </RouterLink>
     </div>
   </nav>
 </template>
