@@ -3,7 +3,9 @@ import { onUnmounted, readonly, ref } from 'vue';
 import { defaultIntensities } from '../constants/ambience';
 import { createAmbienceMix } from '../models/ambienceMix';
 import type { AmbienceMix } from '../models/ambienceMix';
-import { clearTextureCache, textureWarmupTasks } from '../models/ambienceTexture';
+import { textureWarmupTasks } from '../models/ambienceTexture';
+import { clearTextureCache } from '../models/textureCache';
+import { loadThunderAssets } from '../models/thunderAssets';
 import type { AmbienceController, AmbienceLayerId } from '../types/ambience';
 import type { AudioBusHost, AudioBusLease } from '../types/audioBus';
 
@@ -132,6 +134,23 @@ export function useAmbience(host: AudioBusHost): AmbienceController {
       return;
     }
 
+    if (id === 'thunder') {
+      try {
+        // 雷声模板按需装入；页面挂载后已开始下载，这里通常直接命中。
+        await loadThunderAssets();
+      } catch {
+        if (disposed) return;
+        // 等待期间用户已取消启用时，只保留当前状态，不提示失败。
+        if (!activeLayers.value.has(id)) return;
+        // 数据未到达时只撤销这次启用，不影响其他声部。
+        const remaining = new Set(activeLayers.value);
+        remaining.delete(id);
+        activeLayers.value = remaining;
+        error.value = '雷声数据加载失败，请检查网络后重试。';
+        return;
+      }
+    }
+
     try {
       const current = await ensureMix();
       if (!current || disposed) return;
@@ -163,7 +182,11 @@ export function useAmbience(host: AudioBusHost): AmbienceController {
     clearTextureCache();
   });
 
-  if (host.supported) warmupTextures();
+  if (host.supported) {
+    // 页面挂载后立即拉取雷声模板；失败时点击雷声会重试。
+    void loadThunderAssets().catch(() => {});
+    warmupTextures();
+  }
 
   return {
     intensities: readonly(intensities),

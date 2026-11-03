@@ -8,7 +8,7 @@ interface Props {
   label: string;
   /** 独立使用时必填；在 LabRadioGroup 内由组统一提供。 */
   name?: string;
-  size?: 'medium' | 'large';
+  size?: 'default' | 'large';
 }
 
 const props = defineProps<Props>();
@@ -21,7 +21,7 @@ const isChecked = computed(() =>
 );
 // 等宽由组的布局决定，选项自身不单独控制。
 const isStretched = computed(() => group?.stretch ?? false);
-const selectedSize = computed(() => props.size ?? group?.size ?? 'medium');
+const selectedSize = computed(() => props.size ?? group?.size ?? 'default');
 
 function handleChange() {
   if (group) group.selectValue(props.value);
@@ -62,25 +62,30 @@ function handleChange() {
 
   .lab-radio-label {
     display: block;
-    padding: 7px 10px;
+    padding: var(--space-2) var(--space-3);
 
     border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: var(--color-bg);
+    border-radius: var(--radius-control);
+    background: var(--color-bg-control);
 
     text-align: center;
     cursor: pointer;
 
     &:hover {
-      filter: brightness(1.12);
+      background: var(--color-bg-control-hover);
     }
   }
 
   .lab-radio-input:checked + .lab-radio-label {
     border-color: var(--color-accent);
-    background: var(--color-accent-soft);
+    background: var(--color-accent-subtle);
 
     color: var(--color-accent);
+
+    // 选中态保持强调表面，只做提亮
+    &:hover {
+      filter: brightness(1.12);
+    }
   }
 
   &.is-stretched {
@@ -88,7 +93,7 @@ function handleChange() {
   }
 
   &.is-large .lab-radio-label {
-    font-size: 23px;
+    font-size: var(--font-size-large);
   }
 }
 </style>

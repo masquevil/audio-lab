@@ -1,29 +1,89 @@
 @use './reset';
 
 :root {
-  // 页面表面与边界
-  --color-bg: #0c1016;
-  --color-surface: #121820;
+  // 页面与表面
+  --color-bg-page: #0c1016;
+  --color-bg-surface: #121820;
+  --color-bg-control: var(--color-bg-page);
+  // 控件悬停表面：比页面底与卡片表面都亮一档
+  --color-bg-control-hover: #1a2430;
   --color-border: #252f3d;
   --color-shadow: #0008;
 
-  // 内容层级
-  --color-text: #eef3fc;
-  --color-text-muted: #aebcd2;
+  // 文本
+  --color-text-primary: #eef3fc;
+  --color-text-secondary: #aebcd2;
 
-  // 交互与强调
+  // 强调与状态
   --color-accent: #45dba0;
-  --color-accent-soft: #153329;
+  --color-accent-subtle: #153329;
   --color-on-accent: #101827;
-  --color-focus: #fff;
+  --color-danger: #ff9f8a;
+
+  // 字号阶：界面文字以 12px 为下限，只使用偶数阶
+  --font-size-caption: 12px;
+  --font-size-body: 14px;
+  --font-size-title: 16px;
+  --font-size-heading: 18px;
+  --font-size-large: 24px;
+  --font-size-page-title: 28px;
+  --font-size-hero: 32px;
+  --font-size-display: 40px;
+
+  // 图标字号
+  --icon-size-sm: 18px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+
+  // 行高：标题收紧，正文保持 1.6
+  --line-height-heading: 1.25;
+  --line-height-title: 1.4;
+  --line-height-body: 1.6;
+
+  // 间距：档号为 4px 倍数，只提供实际使用的档位
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  // 页面布局
+  --page-max-width: 1080px;
+  // 页面左右留白，窄屏由下方媒体查询收窄
+  --page-gutter-horizontal: var(--space-8);
+  --page-padding-top: var(--space-6);
+  --page-padding-bottom: var(--space-8);
+
+  // 动效与状态
+  --motion-fast: 0.15s;
+  --opacity-disabled: 0.45;
+
+  // 表面与控件圆角
+  --radius-small: 4px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
 }
 
 // 应用基础外观与排版
 :root {
-  background: var(--color-bg);
+  background: var(--color-bg-page);
 
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-text);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text-primary);
   color-scheme: dark;
+}
+
+// 控件默认外观：滑块跟随强调色
+input[type='range'] {
+  accent-color: var(--color-accent);
+}
+
+// 窄屏页面留白；与 PageHeader 的堆叠断点保持一致
+@media (max-width: 700px) {
+  :root {
+    --page-gutter-horizontal: var(--space-4);
+  }
 }

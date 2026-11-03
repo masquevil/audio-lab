@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import HomeView from '@/views/home/HomeView.vue';
+import LabRouteView from '@/components/LabRouteView.vue';
+
+const viewLoader = () => import('@/views/home/HomeView.vue');
 </script>
 
 <template>
-  <HomeView />
+  <LabRouteView :loader="viewLoader" />
 </template>

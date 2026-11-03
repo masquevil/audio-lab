@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import LabButton from '@/components/LabButton.vue';
+
 import type { ReferenceRecording } from '../types/voice';
 
 interface Props {
@@ -33,13 +35,13 @@ function handleStopReference() {
   >
     <div class="comparison-heading">
       <h2 class="comparison-title">参考声音</h2>
-      <button
-        class="comparison-button"
+      <LabButton
+        size="compact"
         :disabled="!active"
         @click="handleStopReference"
       >
         停止参考
-      </button>
+      </LabButton>
     </div>
 
     <div
@@ -48,13 +50,13 @@ function handleStopReference() {
       :key="recording.url"
     >
       <span>{{ recording.label }}</span>
-      <button
-        class="comparison-button"
+      <LabButton
+        size="compact"
         :disabled="!supported"
         @click="handlePlay(recording)"
       >
         试听参考 {{ recording.label }}
-      </button>
+      </LabButton>
     </div>
 
     <div
@@ -76,7 +78,7 @@ function handleStopReference() {
 <style scoped lang="scss">
 // 参考区域边界与行布局
 .comparison-panel {
-  padding-top: 8px;
+  padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
 }
 
@@ -85,9 +87,9 @@ function handleStopReference() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .comparison-heading {
@@ -97,32 +99,12 @@ function handleStopReference() {
 // 标题与播放提示
 .comparison-title {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-body);
 }
 
 .comparison-note {
-  margin: 5px 0;
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
-
-// 试听与停止按钮
-.comparison-button {
-  padding: 5px 10px;
-
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &:not(:disabled):hover {
-    filter: brightness(1.12);
-  }
+  margin: var(--space-1) 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
 }
 </style>

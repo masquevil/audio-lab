@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import InstrumentsView from '@/views/instruments/InstrumentsView.vue';
+import LabRouteView from '@/components/LabRouteView.vue';
+
+const viewLoader = () => import('@/views/instruments/InstrumentsView.vue');
 </script>
 
 <template>
-  <InstrumentsView />
+  <LabRouteView :loader="viewLoader" />
 </template>

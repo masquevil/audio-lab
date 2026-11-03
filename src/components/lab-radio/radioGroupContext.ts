@@ -8,7 +8,7 @@ export interface RadioGroupContext {
   selectValue: (value: string | number) => void;
   readonly name: string;
   readonly stretch?: boolean;
-  readonly size?: 'medium' | 'large';
+  readonly size?: 'default' | 'large';
 }
 
 export const radioGroupKey: InjectionKey<RadioGroupContext> = Symbol('lab-radio-group');

@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+
+import LabPageBody from '@/components/LabPageBody.vue';
+import PageHeader from '@/components/PageHeader.vue';
 </script>
 
 <template>
-  <main class="home-page">
-    <p class="page-eyebrow">A SMALL LAB FOR SOUND</p>
-    <h1 class="page-title">声音的可能，<span class="title-accent">从这里开始。</span></h1>
+  <LabPageBody size="large">
+    <PageHeader
+      eyebrow="A SMALL LAB FOR SOUND"
+      title="声音的可能，"
+      accent="从这里开始。"
+      size="large"
+    />
     <p class="page-intro">演奏、聆听、探索。在浏览器里，做一点关于声音的实验。</p>
     <div class="feature-grid">
       <RouterLink
@@ -85,57 +92,33 @@ import { RouterLink } from 'vue-router';
       </RouterLink>
     </div>
     <p class="page-footnote">WEB AUDIO API <span>无需安装 · 无需麦克风权限 · 不自动播放</span></p>
-  </main>
+  </LabPageBody>
 </template>
 
 <style scoped lang="scss">
 @use '@/assets/keyboard';
 
-// 页面布局
-.home-page {
-  max-width: 1060px;
-  margin: auto;
-  padding: 38px 28px;
-}
-
 // 标题与介绍
-.page-title {
-  margin: 10px 0;
-
-  font-size: clamp(23px, 3vw, 30px);
-  line-height: 1.4;
-}
-
-.title-accent {
-  color: var(--color-accent);
-}
-
-.page-eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--color-text-muted);
-}
-
 .page-intro {
-  font-size: 13px;
-  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
 }
 
 // 功能卡片
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  gap: var(--space-4);
 
-  margin: 28px 0;
+  margin: var(--space-8) 0;
 }
 
 .feature-card {
-  padding: 22px;
+  padding: var(--space-6);
 
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
 
   // 卡片内容与状态
 
@@ -143,17 +126,17 @@ import { RouterLink } from 'vue-router';
     display: block;
 
     transition:
-      border-color 0.15s,
-      box-shadow 0.15s;
+      border-color var(--motion-fast),
+      box-shadow var(--motion-fast);
 
-    color: var(--color-text);
+    color: var(--color-text-primary);
     text-decoration: none;
   }
 
   &.linked-card:hover,
   &.linked-card:focus-visible {
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent-soft);
+    box-shadow: 0 0 0 1px var(--color-accent-subtle);
   }
 
   .card-heading {
@@ -163,36 +146,38 @@ import { RouterLink } from 'vue-router';
   }
 
   .feature-icon {
-    font-size: 26px;
+    font-size: var(--icon-size-lg);
     color: var(--color-accent);
   }
 
   .feature-badge {
-    padding: 3px 8px;
+    padding: var(--space-1) var(--space-2);
 
-    border-radius: 5px;
-    background: var(--color-accent-soft);
+    border-radius: var(--radius-small);
+    background: var(--color-accent-subtle);
 
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     color: var(--color-accent);
   }
 
   .card-title {
-    margin: 12px 0 8px;
+    margin: var(--space-3) 0 var(--space-2);
 
-    font-size: 17px;
+    font-size: var(--font-size-heading);
+    line-height: var(--line-height-title);
   }
 
   .card-description {
-    min-height: 38px;
+    // 描述区至少两行高，保证三张卡片的内容区对齐
+    min-height: calc(2 * var(--font-size-caption) * var(--line-height-body));
     margin: 0;
 
-    font-size: 12px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .card-action {
-    font-size: 13px;
+    font-size: var(--font-size-body);
     color: var(--color-accent);
     text-decoration: none;
   }
@@ -203,19 +188,19 @@ import { RouterLink } from 'vue-router';
 
     height: 96px;
 
-    font-size: 12px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .ambience-preview {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--space-4);
 
     height: 96px;
 
-    font-size: 22px;
-    color: var(--color-text-muted);
+    font-size: var(--icon-size-lg);
+    color: var(--color-text-secondary);
   }
 }
 
@@ -225,8 +210,8 @@ import { RouterLink } from 'vue-router';
 
   max-width: 280px;
   height: 62px;
-  margin: 16px 0;
-  border-radius: 5px;
+  margin: var(--space-4) 0;
+  border-radius: var(--radius-small);
   overflow: hidden;
 
   .preview-key {
@@ -235,7 +220,7 @@ import { RouterLink } from 'vue-router';
     flex: 1;
 
     border-right: 1px solid var(--color-key-edge);
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 var(--radius-small) var(--radius-small);
     background: var(--color-key-bottom);
   }
 
@@ -247,7 +232,7 @@ import { RouterLink } from 'vue-router';
     width: 58%;
     height: 60%;
 
-    border-radius: 0 0 2px 2px;
+    border-radius: 0 0 var(--radius-small) var(--radius-small);
     background: var(--color-key-black);
     content: '';
   }
@@ -258,11 +243,11 @@ import { RouterLink } from 'vue-router';
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 
-  font-size: 10px;
+  font-size: var(--font-size-caption);
   letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 // 窄屏布局
@@ -273,9 +258,6 @@ import { RouterLink } from 'vue-router';
 }
 
 @media (max-width: 600px) {
-  .home-page {
-    padding: 26px 16px;
-  }
   .feature-grid {
     grid-template-columns: 1fr;
   }

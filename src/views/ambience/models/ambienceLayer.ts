@@ -5,11 +5,10 @@ import { createNoiseBuffer } from '../utils/noise';
 import {
   getEmberBedTexture,
   getRainTexture,
-  getThunderTexture,
+  getThunderTextureSource,
   toAudioBuffer,
 } from './ambienceTexture';
 import { buildFireTimbre, fireClusterOffsets, nextFireDelay, pickFireTimbre } from './fireTimbre';
-import { thunderAudioPresetIds } from './thunderEnvelope';
 import type { ThunderAudioPreset } from './thunderEnvelope';
 
 export interface AmbienceLayer {
@@ -583,6 +582,7 @@ type ThunderDistance = 'near' | 'mid' | 'far';
 /** 雷声：按强度选择近/中/远变体，播放包络模板合成的雷声纹理。 */
 function createThunderLayer(core: LayerCore): AmbienceLayer {
   const context = core.context;
+  const { presetIds, getTexture } = getThunderTextureSource();
   const buffers = new Map<ThunderAudioPreset, AudioBuffer>();
   const activeStrikes = new Set<AudioBufferSourceNode>();
 
@@ -590,7 +590,7 @@ function createThunderLayer(core: LayerCore): AmbienceLayer {
   function bufferFor(preset: ThunderAudioPreset): AudioBuffer {
     let buffer = buffers.get(preset);
     if (!buffer) {
-      buffer = toAudioBuffer(context, getThunderTexture(context.sampleRate, preset));
+      buffer = toAudioBuffer(context, getTexture(context.sampleRate, preset));
       buffers.set(preset, buffer);
     }
     return buffer;
@@ -689,7 +689,7 @@ function createThunderLayer(core: LayerCore): AmbienceLayer {
       scheduleStorm();
     });
     // 错开生成其余变体，把渲染成本摊到播放过程中，避免一次冻结主线程。
-    thunderAudioPresetIds.forEach((preset, index) => {
+    presetIds.forEach((preset, index) => {
       core.schedule(1.2 + index * 1.5, () => bufferFor(preset));
     });
   };

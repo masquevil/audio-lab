@@ -15,8 +15,8 @@ import type { Random, StereoTexture } from '../utils/dsp.ts';
 
 import { renderEnvelopeTexture } from './envelopeTexture.ts';
 import { rainLightEnvelope } from './rainLightEnvelope.ts';
-import { createThunderEnvelopeTexture, thunderAudioPresets } from './thunderEnvelope.ts';
-import type { ThunderAudioPreset } from './thunderEnvelope.ts';
+import { getCachedTexture } from './textureCache.ts';
+import type { ThunderTextureSource } from './thunderTexture.ts';
 
 export type RainTextureVariant = 'light' | 'heavy';
 
@@ -298,16 +298,6 @@ export function toAudioBuffer(context: BaseAudioContext, texture: StereoTexture)
   return buffer;
 }
 
-const textureCache = new Map<string, StereoTexture>();
-
-function cachedTexture(key: string, create: () => StereoTexture): StereoTexture {
-  const cached = textureCache.get(key);
-  if (cached) return cached;
-  const texture = create();
-  textureCache.set(key, texture);
-  return texture;
-}
-
 /**
  * 篝火“底纹”：密集的极短微爆，不是噪声层。
  *
@@ -370,7 +360,7 @@ function createEmberBedTexture(rate: number, seconds = 20, seed = 41): StereoTex
 }
 
 export function getEmberBedTexture(rate: number): StereoTexture {
-  return cachedTexture(`ember-bed:${rate}`, () => {
+  return getCachedTexture(`ember-bed:${rate}`, () => {
     const texture = createEmberBedTexture(rate);
     normalizeLoudness(texture.left, texture.right, -30, 0.98);
     return texture;
@@ -379,7 +369,7 @@ export function getEmberBedTexture(rate: number): StereoTexture {
 
 /** 上一版最终暴雨/轻雨纹理；轻雨改用 Moodist 轻雨的包络模板重建。 */
 export function getRainTexture(rate: number, variant: RainTextureVariant): StereoTexture {
-  return cachedTexture(`rain:${rate}:${variant}`, () => {
+  return getCachedTexture(`rain:${rate}:${variant}`, () => {
     const texture =
       variant === 'light' ? createRainLightTexture(rate, 11) : createHeavyRainTexture(rate);
     // 轻雨与暴雨统一到同一响度基准后由强度曲线控制电平；轻雨再低 3dB，
@@ -408,18 +398,19 @@ function createRainLightTexture(rate: number, seed: number): StereoTexture {
   return makeSeamlessLoop(rendered.left, rendered.right, loopSeconds, 1, rate);
 }
 
-/** 首次用到某个变体时才渲染，避免一次生成全部雷声纹理阻塞主线程。 */
-export function getThunderTexture(rate: number, preset: ThunderAudioPreset): StereoTexture {
-  return cachedTexture(`thunder-envelope:${rate}:${preset}`, () => {
-    const texture = createThunderEnvelopeTexture(rate, thunderAudioPresets[preset]);
-    normalizeLoudness(texture.left, texture.right, -20, 0.98);
-    return texture;
-  });
+/**
+ * 雷声模板约 56KB，单独成 chunk 由 `loadThunderAssets` 在页面挂载后装入；
+ * 声部只在装入完成后创建，因此这里没有数据时直接报错而不是静默降级。
+ */
+let thunderTextureSource: ThunderTextureSource | undefined;
+
+export function setThunderTextureSource(source: ThunderTextureSource): void {
+  thunderTextureSource = source;
 }
 
-/** 页面卸载时释放缓存，避免长时间占用内存。 */
-export function clearTextureCache(): void {
-  textureCache.clear();
+export function getThunderTextureSource(): ThunderTextureSource {
+  if (!thunderTextureSource) throw new Error('雷声数据尚未加载');
+  return thunderTextureSource;
 }
 
 /**

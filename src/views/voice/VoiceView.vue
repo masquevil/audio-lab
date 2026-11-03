@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 
+import LabButton from '@/components/LabButton.vue';
+import LabNotes from '@/components/LabNotes.vue';
+import LabPageBody from '@/components/LabPageBody.vue';
 import LabRadio from '@/components/lab-radio/LabRadio.vue';
 import LabRadioGroup from '@/components/lab-radio/LabRadioGroup.vue';
+import PageHeader from '@/components/PageHeader.vue';
 
 import recordingUrlVowelE from './assets/e.ogg?url';
 import recordingUrlVowelY from './assets/y.ogg?url';
@@ -50,6 +54,11 @@ const formConfigs: Record<'durationSlider' | 'volumeSlider', SliderConfig> = {
 const referenceRecordings: ReferenceRecording[] = [
   { label: 'e', url: recordingUrlVowelE },
   { label: 'ü', url: recordingUrlVowelY },
+];
+// 实现说明：不参与音频生成。
+const implementationNotes = [
+  '元音与声学参数为近似值，三声使用完整降升轮廓，不含语流变调。',
+  '声音由实时合成生成，可能带有机械感；尚未实现辅音、拼音组合或任意文字朗读。',
 ];
 
 // 试听参数：页面只持有用户选择，修改不影响正在播放的会话。
@@ -130,14 +139,13 @@ function handleReferenceStop() {
 </script>
 
 <template>
-  <main class="voice-page">
-    <header class="page-heading">
-      <div>
-        <div class="page-eyebrow">PLAYGROUND / 02</div>
-        <h1 class="page-title">人声<span class="title-accent">实验室</span></h1>
-      </div>
-      <div class="heading-description">六个元音，四种声调，探索声音的形状。</div>
-    </header>
+  <LabPageBody>
+    <PageHeader
+      eyebrow="PLAYGROUND / 02"
+      title="人声"
+      accent="实验室"
+      description="六个元音，四种声调，探索声音的形状。"
+    />
 
     <div class="experiment-grid">
       <section
@@ -213,27 +221,25 @@ function handleReferenceStop() {
 
         <div class="voice-description">设置在下次试听生效。请先调低设备音量。</div>
         <div class="voice-actions">
-          <button
-            class="voice-button primary-button"
+          <LabButton
+            type="primary"
             :disabled="!audioSupported"
             @click="handleAudition()"
           >
             试听 {{ voiceForm.vowel }} · {{ voiceForm.tone }} 声
-          </button>
-          <button
-            class="voice-button"
+          </LabButton>
+          <LabButton
             :disabled="!audioSupported"
             @click="handleAudition(true)"
           >
             连续对比四声
-          </button>
-          <button
-            class="voice-button"
+          </LabButton>
+          <LabButton
             :disabled="!playing"
             @click="stop()"
           >
             停止
-          </button>
+          </LabButton>
         </div>
 
         <div
@@ -315,123 +321,48 @@ function handleReferenceStop() {
       </section>
     </div>
 
-    <details class="voice-limitations">
-      <summary>实验说明与限制</summary>
-      <div>
-        验证元音、基频声调与音色参数能否独立控制。男声/女声仅为两组声学预设，不代表真实个体；元音为近似值，三声使用完整降升轮廓，不含语流变调。
-      </div>
-      <div>
-        声音可能带有机械感。尚未实现辅音、拼音组合或任意文字朗读；自然中文还需要音素过渡、韵律与文本处理，不能由本原型直接推断效果。
-      </div>
-    </details>
-  </main>
+    <LabNotes :paragraphs="implementationNotes" />
+  </LabPageBody>
 </template>
 
 <style scoped lang="scss">
-// 页面布局与面板容器
-.voice-page {
-  max-width: 1060px;
-  margin: auto;
-  padding: 18px 28px;
-}
-
+// 实验网格与面板容器
 .experiment-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--space-4);
 
-  margin: 14px 0;
+  margin: 0 0 var(--space-4);
 }
 
 .voice-panel {
-  padding: 16px;
+  padding: var(--space-4);
 
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-}
-
-// 页头标题与简介
-.page-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 12px;
-
-  margin-bottom: 10px;
-
-  .page-title {
-    margin: 5px 0 0;
-
-    font-size: 28px;
-    letter-spacing: -0.04em;
-  }
-
-  .title-accent {
-    color: var(--color-accent);
-  }
-
-  .heading-description,
-  .page-eyebrow {
-    margin: 0;
-
-    font-size: 12px;
-    color: var(--color-text-muted);
-  }
-
-  .page-eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.16em;
-  }
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
 }
 
 // 面板标题与辅助文案
 .panel-title {
-  font-size: 15px;
+  font-size: var(--font-size-title);
+  line-height: var(--line-height-title);
 }
 
-.voice-description,
-.voice-limitations {
-  font-size: 12px;
-  color: var(--color-text-muted);
+.voice-description {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
 }
 
 // 选项分组与操作区布局
 .voice-option-group {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .voice-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-// 操作按钮及其可用状态
-.voice-button {
-  padding: 7px 10px;
-
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &:not(:disabled):hover {
-    filter: brightness(1.12);
-  }
-}
-
-.primary-button {
-  background: var(--color-accent);
-
-  color: var(--color-on-accent);
+  gap: var(--space-2);
 }
 
 // 时长与音量滑块
@@ -440,35 +371,34 @@ function handleReferenceStop() {
   flex-wrap: wrap;
   justify-content: space-between;
 
-  margin: 10px 0;
+  margin: var(--space-2) 0;
 
-  font-size: 12px;
+  font-size: var(--font-size-caption);
 }
 
 .voice-slider {
   width: 100%;
-  margin-top: 10px;
-
-  accent-color: var(--color-accent);
+  margin-top: var(--space-2);
 }
 
 // 当前发声预览
 .sound-preview {
   display: flex;
   align-items: baseline;
-  gap: 14px;
+  gap: var(--space-3);
 
   margin: 0;
 
-  font-size: 40px;
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-heading);
   color: var(--color-accent);
 }
 
 .preview-caption {
   display: block;
 
-  font-size: 13px;
-  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
 }
 
 // 基频轮廓图
@@ -493,7 +423,7 @@ function handleReferenceStop() {
   display: flex;
   justify-content: space-between;
 
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 
   border-bottom: 1px solid var(--color-border);
 }
@@ -504,10 +434,6 @@ function handleReferenceStop() {
 
 // 窄屏布局
 @media (max-width: 700px) {
-  .voice-page {
-    padding: 24px 16px;
-  }
-
   .experiment-grid {
     grid-template-columns: 1fr;
   }

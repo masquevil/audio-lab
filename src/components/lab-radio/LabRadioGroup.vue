@@ -10,7 +10,7 @@ interface Props {
   /** 组内选项的默认等分宽度。 */
   stretch?: boolean;
   /** 组内选项的默认字号，单个选项可覆盖。 */
-  size?: 'medium' | 'large';
+  size?: 'default' | 'large';
 }
 
 const props = defineProps<Props>();
@@ -53,17 +53,17 @@ provide(radioGroupKey, {
 .lab-radio-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .lab-radio-title {
-  font-size: 12px;
-  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
 }
 
 .lab-radio-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 </style>

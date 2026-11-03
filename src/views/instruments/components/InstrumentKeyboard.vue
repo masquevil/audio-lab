@@ -109,9 +109,9 @@ onUnmounted(() => {
         @lostpointercapture="handlePointerRelease"
       >
         <span>{{ note.name }}</span>
-        <small class="key-shortcut">{{
+        <span class="key-shortcut">{{
           note.row === octave ? keys[note.pitch]?.toUpperCase() : ''
-        }}</small>
+        }}</span>
       </button>
     </div>
   </div>
@@ -130,7 +130,7 @@ onUnmounted(() => {
 
 // 琴键容器
 .keyboard-scroll {
-  padding-bottom: 5px;
+  padding-bottom: var(--space-1);
   overflow-x: auto;
 }
 
@@ -139,7 +139,7 @@ onUnmounted(() => {
 
   min-width: 700px;
   height: 176px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   overflow: hidden;
 }
 
@@ -156,23 +156,24 @@ onUnmounted(() => {
 
   width: calc(100% / 21);
   height: 172px;
-  padding: 0 0 12px;
+  padding: 0 0 var(--space-3);
 
   border: 1px solid var(--color-key-edge);
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 var(--radius-small) var(--radius-small);
   background: linear-gradient(var(--color-key-white), var(--color-key-bottom));
   box-shadow: inset 0 -4px 0 var(--color-key-shadow);
 
-  font-size: 10px;
+  font-size: var(--font-size-caption);
   color: var(--color-key-label);
 
   cursor: pointer;
   touch-action: pan-x;
   user-select: none;
+  white-space: nowrap;
 
   .key-shortcut {
     height: 12px;
-    margin-top: 6px;
+    margin-top: var(--space-2);
   }
 
   &.sharp-key {
@@ -181,14 +182,14 @@ onUnmounted(() => {
 
     width: calc(100% / 21 * 0.62);
     height: 106px;
-    padding-bottom: 8px;
+    padding-bottom: var(--space-2);
 
     border-color: var(--color-key-black);
     background: linear-gradient(var(--color-key-black-top), var(--color-key-black));
     box-shadow: 0 4px 6px var(--color-shadow);
 
-    font-size: 8px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   &.active-key {
@@ -202,9 +203,9 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-around;
 
-  padding: 10px 0 14px;
+  padding: var(--space-3) 0 var(--space-4);
 
-  font-size: 10px;
-  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
 }
 </style>

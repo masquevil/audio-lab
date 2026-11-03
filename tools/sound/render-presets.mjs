@@ -12,9 +12,8 @@ import { dirname, resolve } from 'node:path';
 import {
   getEmberBedTexture,
   getRainTexture,
-  getThunderTexture,
 } from '../../src/views/ambience/models/ambienceTexture.ts';
-import { thunderAudioPresetIds } from '../../src/views/ambience/models/thunderEnvelope.ts';
+import { thunderTextureSource } from '../../src/views/ambience/models/thunderTexture.ts';
 
 const rate = 48_000;
 const outputFlag = process.argv.indexOf('--output');
@@ -60,9 +59,9 @@ if (withTextures) {
   render('rain-heavy', getRainTexture(rate, 'heavy'));
   render('fire-bed', getEmberBedTexture(rate));
 } else {
-  for (const name of thunderAudioPresetIds) {
+  for (const name of thunderTextureSource.presetIds) {
     const start = performance.now();
-    const texture = getThunderTexture(rate, name);
+    const texture = thunderTextureSource.getTexture(rate, name);
     render(`thunder-${name}`, texture);
     console.log(`  渲染 ${(performance.now() - start).toFixed(0)}ms`);
   }

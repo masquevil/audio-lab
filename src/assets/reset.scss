@@ -40,11 +40,13 @@ td {
   padding: 0;
 }
 
+// 控件沿用页面字体与字号，避免浏览器默认值
 button,
 input,
 select,
 textarea {
   font-family: inherit;
+  font-size: inherit;
 }
 
 a {

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import LabButton from '@/components/LabButton.vue';
+
 import type { AmbienceLayerConfig } from '../types/ambience';
 
 interface Props {
@@ -34,7 +36,7 @@ function handleToggleClick(): void {
 </script>
 
 <template>
-  <article
+  <div
     class="ambience-card"
     :class="{ 'active-card': active }"
   >
@@ -49,16 +51,23 @@ function handleToggleClick(): void {
         <h2 class="layer-title">{{ config.label }}</h2>
         <p class="layer-detail">{{ config.detail }}</p>
       </div>
-      <button
-        class="layer-toggle"
-        type="button"
-        :aria-pressed="active"
-        :aria-label="`${active ? '停止' : '播放'}${config.label}`"
+      <LabButton
+        v-if="active"
+        type="primary"
+        size="compact"
         :disabled="disabled"
         @click="handleToggleClick"
       >
-        {{ active ? '停止' : '播放' }}
-      </button>
+        停止
+      </LabButton>
+      <LabButton
+        v-else
+        size="compact"
+        :disabled="disabled"
+        @click="handleToggleClick"
+      >
+        播放
+      </LabButton>
     </header>
 
     <label class="intensity-control">
@@ -82,35 +91,32 @@ function handleToggleClick(): void {
         <span>{{ config.intensityLabels[config.intensityLabels.length - 1] }}</span>
       </span>
     </label>
-  </article>
+  </div>
 </template>
 
 <style scoped lang="scss">
 // 声部卡片与激活状态
 .ambience-card {
+  // 声部图标盒尺寸：组件内维护，不占用全局间距刻度
+  --layer-icon-size: 32px;
+
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
 
-  padding: 16px;
+  padding: var(--space-4);
 
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
 
   transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 
   &.active-card {
     border-color: var(--color-accent);
-    box-shadow: inset 0 0 0 1px var(--color-accent-soft);
-  }
-
-  &.active-card .layer-toggle {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+    box-shadow: inset 0 0 0 1px var(--color-accent-subtle);
   }
 }
 
@@ -118,20 +124,20 @@ function handleToggleClick(): void {
 .card-heading {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
 
   .layer-icon {
     display: grid;
     place-items: center;
     flex-shrink: 0;
 
-    width: 34px;
-    height: 34px;
+    width: var(--layer-icon-size);
+    height: var(--layer-icon-size);
 
-    border-radius: 9px;
-    background: var(--color-accent-soft);
+    border-radius: var(--radius-control);
+    background: var(--color-accent-subtle);
 
-    font-size: 18px;
+    font-size: var(--icon-size-sm);
     color: var(--color-accent);
   }
 
@@ -141,40 +147,17 @@ function handleToggleClick(): void {
   }
 
   .layer-title {
-    font-size: 15px;
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
   }
 
   .layer-detail {
     overflow: hidden;
 
-    font-size: 11px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
-  }
-
-  .layer-toggle {
-    flex-shrink: 0;
-
-    padding: 5px 10px;
-
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: var(--color-bg);
-
-    font-size: 11px;
-    color: var(--color-text);
-
-    cursor: pointer;
-
-    &:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    &:not(:disabled):hover {
-      filter: brightness(1.12);
-    }
   }
 }
 
@@ -182,34 +165,33 @@ function handleToggleClick(): void {
 .intensity-control {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 
   .intensity-heading {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
 
-    font-size: 11px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .intensity-value {
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     color: var(--color-accent);
   }
 
   .intensity-slider {
     width: 100%;
-    accent-color: var(--color-accent);
   }
 
   .intensity-range {
     display: flex;
     justify-content: space-between;
 
-    font-size: 10px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 }
 </style>

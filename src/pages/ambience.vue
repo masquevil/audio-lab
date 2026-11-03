@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import AmbienceView from '@/views/ambience/AmbienceView.vue';
+import LabRouteView from '@/components/LabRouteView.vue';
+
+const viewLoader = () => import('@/views/ambience/AmbienceView.vue');
 </script>
 
 <template>
-  <AmbienceView />
+  <LabRouteView :loader="viewLoader" />
 </template>

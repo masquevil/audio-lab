@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import VoiceView from '@/views/voice/VoiceView.vue';
+import LabRouteView from '@/components/LabRouteView.vue';
+
+const viewLoader = () => import('@/views/voice/VoiceView.vue');
 </script>
 
 <template>
-  <VoiceView />
+  <LabRouteView :loader="viewLoader" />
 </template>

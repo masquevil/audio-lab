@@ -23,7 +23,7 @@ pnpm check
 | 位置 | 职责 |
 | --- | --- |
 | `src/main.ts`、`src/App.vue` | 启动、全局注册、应用布局与路由出口 |
-| `src/pages/` | 自动路由入口，仅引用 view、配置元信息和映射参数 |
+| `src/pages/` | 自动路由入口，仅声明视图加载器、配置元信息和映射参数 |
 | `src/views/` | 页面实现；内部按需设置 components、hooks、models、types、constants |
 | `src/components/`、`src/hooks/` | 跨页面 UI 与组合式逻辑 |
 | `src/models/`、`src/utils/` | 按需提取的共享状态模型、无状态工具 |
@@ -112,13 +112,13 @@ const props = defineProps<Props>();
 
 ### 样式
 
+设计 token、颜色角色、比例尺和组件边界见 [设计系统](docs/design-system/README.md)；本文件只保留贡献者日常需要遵守的通用约束。
+
 - 使用 SCSS 和组件局部样式；优先原生 CSS 能力，控制作用域及选择器复杂度。
-- **先划分作用域**：全局只保留通用 token、reset 和基础排版；共享组件 token 按需加载并限制作用域，页面专有样式留在页面。
-- **再按职责分组**：变量按排版、表面、内容、交互等语义组织；规则按功能区域聚合，组间留白，复杂区域加简短注释。
+- 规则按功能区域聚合、组间留白；声明由外到内、同类属性相邻，长块分组，短规则保持紧凑。
 - 页面/组件使用语义明确的 class，子项与状态按功能聚合；主题和基础重置可用全局选择器。
-- 声明由外到内组织，同类属性相邻；长块分组，短规则保持紧凑。
-- 原始色值集中在对应作用域的 token 中，消费端使用语义变量；变量定义与用途边界保持一致。
-- 自然继承的属性不重复声明；覆盖使用明确值或变量，避免显式 inherit。控件默认差异由统一 reset 处理。
+- 自然继承的属性不重复声明；控件默认差异由统一 reset 处理。
+- 属性值优先使用设计系统 token；颜色角色、比例尺档位和断点规则以设计系统为准。
 - 保持响应式与基础规则的优先级一致；清理无效、重复及已无用途的声明。
 
 样式按功能聚合，声明从布局到内容分组：
@@ -133,11 +133,11 @@ const props = defineProps<Props>();
   padding: 12px;
   border: 1px solid var(--color-border);
 
-  color: var(--color-text);
+  color: var(--color-text-primary);
 
   .panel-title {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--font-size-title);
   }
 
   &.is-disabled {

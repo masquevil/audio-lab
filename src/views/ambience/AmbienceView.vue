@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import LabButton from '@/components/LabButton.vue';
+import LabNotes from '@/components/LabNotes.vue';
+import LabPageBody from '@/components/LabPageBody.vue';
+import PageHeader from '@/components/PageHeader.vue';
+
 import AmbienceCard from './components/AmbienceCard.vue';
 import {
   ambienceLayers,
@@ -12,6 +17,12 @@ import { useAudioBus } from './hooks/useAudioBus';
 import { useAmbience } from './hooks/useAmbience';
 import { useRecorder } from './hooks/useRecorder';
 import type { AmbienceLayerId } from './types/ambience';
+
+// 实现说明：不参与音频生成。
+const implementationNotes = [
+  '风雨雷火由噪声、滤波器和 LFO 实时合成；强度同时改变纹理与响度，雷声随机触发。',
+  '录音录制的是当前混音，文件格式由浏览器决定；离开页面会停止播放并中断未完成的录音。请先调低设备音量。',
+];
 
 const audioBus = useAudioBus();
 const { supported, error: audioBusError } = audioBus;
@@ -52,7 +63,7 @@ const recordingButtonDisabled = computed(
 const recorderStatusText = computed(() => {
   switch (recordingStatus.value) {
     case 'recording':
-      // 计时由独立的 .recording-time 展示，避免每 250ms 触发一次读屏播报。
+      // 计时由独立的 .recording-time 展示，状态文案不逐秒重复。
       return '正在录制';
     case 'starting':
       return '正在准备录音';
@@ -83,14 +94,13 @@ function handleRecordingToggle(): void {
 </script>
 
 <template>
-  <main class="ambience-page">
-    <header class="page-heading">
-      <div>
-        <p class="page-eyebrow">PLAYGROUND / 03</p>
-        <h1 class="page-title">环境音<span class="title-accent">模拟</span></h1>
-      </div>
-      <p class="heading-description">风、雨、雷与篝火，拼一段自己的天气。</p>
-    </header>
+  <LabPageBody>
+    <PageHeader
+      eyebrow="PLAYGROUND / 03"
+      title="环境音"
+      accent="模拟"
+      description="风、雨、雷与篝火，拼一段自己的天气。"
+    />
 
     <p
       v-if="!supported"
@@ -160,14 +170,13 @@ function handleRecordingToggle(): void {
       </div>
 
       <div class="recorder-actions">
-        <button
-          class="recorder-button primary-button"
-          type="button"
+        <LabButton
+          type="primary"
           :disabled="recordingButtonDisabled"
           @click="handleRecordingToggle"
         >
           {{ recordingButtonLabel }}
-        </button>
+        </LabButton>
         <span
           v-if="recordingStatus === 'recording'"
           class="recording-time"
@@ -206,101 +215,43 @@ function handleRecordingToggle(): void {
           >
             下载录音
           </a>
-          <button
-            class="recorder-button"
-            type="button"
-            @click="discardRecording"
-          >
-            清除结果
-          </button>
+          <LabButton @click="discardRecording"> 清除结果 </LabButton>
         </div>
       </div>
     </section>
 
-    <details class="ambience-notes">
-      <summary class="notes-summary">实验说明与限制</summary>
-      <div class="notes-body">
-        风声、雨声、雷声和篝火均由噪声、滤波器和 LFO
-        实时合成；强度同时改变声音纹理与响度，雷声随机触发，每次节奏不同。
-      </div>
-      <div class="notes-body">
-        录音录制的是浏览器当前混音，文件格式由浏览器决定；离开页面会停止播放并中断未完成的录音。请先调低设备音量。
-      </div>
-    </details>
-  </main>
+    <LabNotes :paragraphs="implementationNotes" />
+  </LabPageBody>
 </template>
 
 <style scoped lang="scss">
-// 页面布局与提示色
-.ambience-page {
-  --color-alert: #ff9f8a;
-
-  max-width: 1060px;
-  margin: auto;
-  padding: 18px 28px;
-}
-
-// 页头标题与简介
-.page-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 12px;
-
-  margin-bottom: 10px;
-
-  .page-title {
-    margin: 5px 0 0;
-
-    font-size: 28px;
-    letter-spacing: -0.04em;
-  }
-
-  .title-accent {
-    color: var(--color-accent);
-  }
-
-  .heading-description,
-  .page-eyebrow {
-    margin: 0;
-
-    font-size: 12px;
-    color: var(--color-text-muted);
-  }
-
-  .page-eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.16em;
-  }
-}
-
 .audio-alert {
-  margin: 8px 0;
+  margin: var(--space-2) 0;
 
-  font-size: 12px;
-  color: var(--color-alert);
+  font-size: var(--font-size-caption);
+  color: var(--color-danger);
 }
 
 // 声部混音网格
 .mixer-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 
-  margin: 14px 0 16px;
+  margin: 0 0 var(--space-4);
 }
 
 // 录音面板
 .recorder-panel {
-  padding: 18px;
+  padding: var(--space-4);
 
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
 
   .panel-title {
-    font-size: 15px;
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
   }
 
   .recorder-heading {
@@ -308,38 +259,38 @@ function handleRecordingToggle(): void {
     justify-content: space-between;
     align-items: start;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--space-3);
   }
 
   .recorder-description {
-    margin-top: 4px;
+    margin-top: var(--space-1);
 
-    font-size: 12px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .recorder-status {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
 
-    font-size: 11px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .recorder-actions {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--space-3);
 
-    margin-top: 14px;
+    margin-top: var(--space-3);
   }
 
   .recorder-note,
   .recording-time {
-    font-size: 11px;
-    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
   }
 
   .recording-time {
@@ -354,7 +305,7 @@ function handleRecordingToggle(): void {
   height: 8px;
 
   border-radius: 50%;
-  background: var(--color-alert);
+  background: var(--color-danger);
 
   animation: recording-pulse 1.1s ease-in-out infinite;
 }
@@ -370,42 +321,15 @@ function handleRecordingToggle(): void {
   }
 }
 
-.recorder-button {
-  padding: 7px 12px;
-
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-
-  color: var(--color-text);
-
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &:not(:disabled):hover {
-    filter: brightness(1.12);
-  }
-}
-
-.primary-button {
-  background: var(--color-accent);
-
-  color: var(--color-on-accent);
-}
-
 // 录音结果试听与下载
 .recording-result {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
 
   .recording-player {
@@ -417,32 +341,16 @@ function handleRecordingToggle(): void {
   .recording-links {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .recording-download {
-    font-size: 12px;
+    font-size: var(--font-size-caption);
     color: var(--color-accent);
 
     &:hover {
       text-decoration: underline;
     }
-  }
-}
-
-// 实验说明
-.ambience-notes {
-  margin-top: 16px;
-
-  font-size: 11px;
-  color: var(--color-text-muted);
-
-  .notes-summary {
-    cursor: pointer;
-  }
-
-  .notes-body {
-    margin-top: 6px;
   }
 }
 
@@ -454,18 +362,8 @@ function handleRecordingToggle(): void {
 }
 
 @media (max-width: 560px) {
-  .ambience-page {
-    padding: 24px 16px;
-  }
-
   .mixer-grid {
     grid-template-columns: 1fr;
-  }
-
-  .page-heading {
-    align-items: start;
-    flex-direction: column;
-    gap: 8px;
   }
 }
 
